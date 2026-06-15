@@ -53,17 +53,13 @@
                         <i class="fas fa-headset" aria-hidden="true"></i> Helpdesk
                     </a>
                 </li>
+                {% if not is_admin_logged_in %}
                 <li>
-                    {% if is_admin_logged_in %}
-                    <a href="{% url 'admin_logout' %}" class="site-navbar__link site-navbar__link--logout">
-                        <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Logout
-                    </a>
-                    {% else %}
                     <a href="{% url 'logout' %}" class="site-navbar__link site-navbar__link--logout">
                         <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Logout
                     </a>
-                    {% endif %}
                 </li>
+                {% endif %}
                 {% else %}
                 <li>
                     <a href="{% url 'login' %}" class="site-navbar__link{% if request.resolver_match.url_name == 'login' %} is-active{% endif %}">

@@ -61,6 +61,18 @@ def _get_students_queryset(search='', program_filter='ALL', verified_filter='ALL
     return students.order_by('-created_date')
 
 
+def _export_course_name_only(label):
+    """Strip B.Sc. department prefix; keep paper/course name only."""
+    name = (label or '').strip()
+    if not name:
+        return ''
+    if ' — ' in name:
+        _department, course_name = name.split(' — ', 1)
+        if course_name.strip():
+            return course_name.strip()
+    return name
+
+
 def _format_selected_courses_for_export(student):
     """Paper names from the student's latest admission, for CSV export."""
     admission = getattr(student, 'latest_admission', None)
@@ -68,15 +80,21 @@ def _format_selected_courses_for_export(student):
         subjects = parse_selected_subjects(admission)
         if subjects:
             names = [
-                (s.get('name') or '').strip()
+                _export_course_name_only(s.get('name'))
                 for s in subjects
-                if isinstance(s, dict) and (s.get('name') or '').strip()
+                if isinstance(s, dict) and _export_course_name_only(s.get('name'))
             ]
             if names:
                 return '; '.join(names)
         if (admission.subject or '').strip():
-            return admission.subject.strip()
-    return (student.course_name or '').strip()
+            names = [
+                _export_course_name_only(part)
+                for part in admission.subject.split(',')
+                if _export_course_name_only(part)
+            ]
+            if names:
+                return '; '.join(names)
+    return _export_course_name_only(student.course_name)
 
 
 def _attach_admissions(students):
@@ -193,6 +211,7 @@ def manage_students(request):
             _attach_admissions([edit_student])
 
     program_types = get_program_names(active_only=False)
+    reset_password_display = request.session.pop('reset_password_display', None)
 
     return render(request, 'admin_panel/students.html', {
         'students': students,
@@ -203,6 +222,7 @@ def manage_students(request):
         'edit_student': edit_student,
         'filter_params': params,
         'total_count': len(students),
+        'reset_password_display': reset_password_display,
     })
 
 
@@ -258,10 +278,11 @@ def reset_student_password(request, pk):
     new_password = generate_secure_password()
     student.password = new_password
     student.save(update_fields=['password'])
-    messages.success(
-        request,
-        f'Password reset for {student.registration_no}. New password: {new_password}',
-    )
+    request.session['reset_password_display'] = {
+        'registration_no': student.registration_no,
+        'password': new_password,
+    }
+    messages.success(request, f'Password reset for {student.registration_no}.')
     return redirect(_students_url(params))
 
 

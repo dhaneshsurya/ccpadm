@@ -15,6 +15,17 @@ class ProgramCourse(models.Model):
         default=False,
         help_text='Pre-select this subject as compulsory when students choose the program.',
     )
+    auto_select_course = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='auto_selected_by_courses',
+        help_text=(
+            'Linked course auto-selected and locked when this course is checked '
+            '(e.g. theory paper → practical/lab).'
+        ),
+    )
     subject_groups = models.ManyToManyField(
         'ProgramSubjectGroup',
         blank=True,
@@ -41,12 +52,55 @@ class Program(models.Model):
     program_level = models.CharField(max_length=20, blank=True)
     is_nep_compliant = models.BooleanField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    max_optional_course_selections = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text=(
+            'Maximum optional courses a student may select on the admission form '
+            '(e.g. 3 for B.A.). Compulsory and auto-selected lab papers do not count. '
+            'Leave blank for no limit.'
+        ),
+    )
 
     class Meta:
         db_table = 'Programs'
 
     def __str__(self):
         return self.program_name
+
+
+class ProgramCourseInstruction(models.Model):
+    """Custom guidance shown above the course table on the admission form."""
+
+    program = models.ForeignKey(
+        Program,
+        on_delete=models.CASCADE,
+        related_name='course_instructions',
+    )
+    title = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text='Optional short heading displayed in bold above the message.',
+    )
+    message = models.TextField(
+        help_text='Instruction text for students selecting courses for this program.',
+    )
+    sort_order = models.PositiveSmallIntegerField(
+        default=0,
+        help_text='Order when multiple instructions exist for the same program.',
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['program__program_name', 'sort_order', 'id']
+        verbose_name = 'Course selection instruction'
+        verbose_name_plural = 'Course selection instructions'
+
+    def __str__(self):
+        label = self.title.strip() or self.message.strip()[:60]
+        return f'{self.program.program_name}: {label}'
 
 
 class ProgramSubjectGroup(models.Model):

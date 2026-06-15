@@ -16,6 +16,8 @@
     let bscSubjectGroups = [];
     let selectedBscGroup = '';
     let previewUnlocked = false;
+    let maxCourseSelections = null;
+    let optionalCheckOrder = [];
     const bscProgramName = cfg.bscProgramName || 'B.Sc.';
     const bscProgramNames = new Set([
         bscProgramName,
@@ -103,9 +105,137 @@
         return programs;
     }
 
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function renderCourseInstructions(instructions) {
+        const panel = document.getElementById('courseProgramInstructions');
+        if (!panel) return;
+        const items = Array.isArray(instructions) ? instructions.filter(item => item?.message) : [];
+        if (!items.length) {
+            panel.hidden = true;
+            panel.innerHTML = '';
+            return;
+        }
+        panel.innerHTML = items.map(item => {
+            const title = (item.title || '').trim();
+            const message = escapeHtml((item.message || '').trim()).replace(/\n/g, '<br>');
+            const titleHtml = title
+                ? `<strong class="course-instruction-card__title">${escapeHtml(title)}</strong>`
+                : '';
+            return `<div class="course-instruction-card" role="note">
+                <i class="fas fa-info-circle course-instruction-card__icon" aria-hidden="true"></i>
+                <div class="course-instruction-card__content">
+                    ${titleHtml}
+                    <p class="course-instruction-card__body">${message}</p>
+                </div>
+            </div>`;
+        }).join('');
+        panel.hidden = false;
+    }
+
+    function isOptionalCourseRow(tr) {
+        if (!tr || tr.hidden) return false;
+        const chk = tr.querySelector('input[type=checkbox]');
+        if (!chk || chk.disabled) return false;
+        if (tr.dataset.dbCompulsory === '1') return false;
+        if (tr.classList.contains('group-locked')) return false;
+        if (tr.dataset.pairLocked === '1') return false;
+        return true;
+    }
+
+    function getOptionalCheckedRows() {
+        return Array.from(document.querySelectorAll('#courseTableBody tr')).filter(tr => {
+            const chk = tr.querySelector('input[type=checkbox]');
+            return isOptionalCourseRow(tr) && chk?.checked;
+        });
+    }
+
+    function rebuildOptionalCheckOrder() {
+        optionalCheckOrder = [];
+        document.querySelectorAll('#courseTableBody tr').forEach(tr => {
+            const chk = tr.querySelector('input[type=checkbox]');
+            if (chk?.checked && isOptionalCourseRow(tr) && tr.dataset.courseId) {
+                optionalCheckOrder.push(tr.dataset.courseId);
+            }
+        });
+    }
+
+    function updateCourseSelectionLimitHint() {
+        const hint = document.getElementById('courseSelectionLimitHint');
+        if (!hint) return;
+        if (!maxCourseSelections) {
+            hint.hidden = true;
+            hint.innerHTML = '';
+            return;
+        }
+        const count = getOptionalCheckedRows().length;
+        hint.hidden = false;
+        hint.innerHTML = `
+            <i class="fas fa-list-check" aria-hidden="true"></i>
+            <span>You may select up to <strong>${maxCourseSelections}</strong> optional courses
+            (<strong>${count}</strong>/${maxCourseSelections} selected).
+            Selecting another will automatically uncheck your previous last selection.</span>
+        `;
+    }
+
+    function enforceCourseSelectionLimit(changedTr) {
+        if (!maxCourseSelections || !changedTr) return;
+        const changedId = changedTr.dataset.courseId;
+        const chk = changedTr.querySelector('input[type=checkbox]');
+        if (!changedId || !chk) return;
+
+        if (!chk.checked) {
+            optionalCheckOrder = optionalCheckOrder.filter(id => id !== changedId);
+            updateCourseSelectionLimitHint();
+            return;
+        }
+
+        if (!isOptionalCourseRow(changedTr)) {
+            updateCourseSelectionLimitHint();
+            return;
+        }
+
+        optionalCheckOrder = optionalCheckOrder.filter(id => id !== changedId);
+        optionalCheckOrder.push(changedId);
+
+        while (getOptionalCheckedRows().length > maxCourseSelections) {
+            let removeId = null;
+            for (let i = optionalCheckOrder.length - 2; i >= 0; i -= 1) {
+                const id = optionalCheckOrder[i];
+                if (id === changedId) continue;
+                const row = findCourseRowById(id);
+                const rowChk = row?.querySelector('input[type=checkbox]');
+                if (row && rowChk?.checked && isOptionalCourseRow(row)) {
+                    removeId = id;
+                    break;
+                }
+            }
+            if (!removeId) break;
+            const removeRow = findCourseRowById(removeId);
+            const removeChk = removeRow?.querySelector('input[type=checkbox]');
+            if (removeChk) {
+                removeChk.checked = false;
+                syncAutoPairedCourses(removeRow, false);
+            }
+            optionalCheckOrder = optionalCheckOrder.filter(id => id !== removeId);
+        }
+        updateCourseSelectionLimitHint();
+    }
+
     function clearCourseTable(message) {
         const tbody = document.getElementById('courseTableBody');
         if (tbody) tbody.innerHTML = `<tr><td colspan="4">${message || 'Select a program name'}</td></tr>`;
+        maxCourseSelections = null;
+        optionalCheckOrder = [];
+        updateCourseSelectionLimitHint();
+        renderCourseInstructions([]);
         updateBscGroupSectionVisibility('');
         const bscSection = document.getElementById('bscGroupSection');
         if (bscSection) bscSection.hidden = true;
@@ -1535,6 +1665,81 @@
         }
     }
 
+    function setCourseAutoPairLabel(tr, on) {
+        const nameCell = tr.children[1];
+        if (!nameCell) return;
+        const existing = nameCell.querySelector('.auto-pair-tag');
+        if (on && !existing) {
+            nameCell.insertAdjacentHTML(
+                'beforeend',
+                ' <small class="auto-pair-tag" style="color:#7f1d1d;font-weight:600;">(Auto-selected)</small>'
+            );
+        } else if (!on && existing) {
+            existing.remove();
+        }
+    }
+
+    function findCourseRowById(courseId) {
+        if (!courseId) return null;
+        return document.querySelector(`#courseTableBody tr[data-course-id="${courseId}"]`);
+    }
+
+    function applyPairedCourseLock(targetTr, locked) {
+        const chk = targetTr.querySelector('input[type=checkbox]');
+        if (!chk) return;
+        if (locked) {
+            targetTr.dataset.pairLocked = '1';
+            chk.checked = true;
+            chk.disabled = true;
+            targetTr.classList.add('pair-locked');
+            setCourseAutoPairLabel(targetTr, true);
+            return;
+        }
+        if (targetTr.dataset.pairLocked !== '1') return;
+        targetTr.dataset.pairLocked = '0';
+        targetTr.classList.remove('pair-locked');
+        setCourseAutoPairLabel(targetTr, false);
+        if (targetTr.dataset.dbCompulsory !== '1' && !targetTr.classList.contains('group-locked')) {
+            chk.disabled = false;
+            chk.checked = false;
+        }
+    }
+
+    function syncAutoPairedCourses(sourceTr, checked) {
+        const autoSelectId = sourceTr.dataset.autoSelectId;
+        if (!autoSelectId) return;
+        const targetTr = findCourseRowById(autoSelectId);
+        if (!targetTr) return;
+        applyPairedCourseLock(targetTr, checked);
+    }
+
+    function syncAllAutoPairedCourses() {
+        document.querySelectorAll('#courseTableBody tr').forEach(tr => {
+            const chk = tr.querySelector('input[type=checkbox]');
+            if (chk?.checked) syncAutoPairedCourses(tr, true);
+        });
+    }
+
+    function bindCourseTableListeners() {
+        const tbody = document.getElementById('courseTableBody');
+        if (!tbody || tbody.dataset.courseListenersBound === '1') return;
+        tbody.dataset.courseListenersBound = '1';
+        tbody.addEventListener('change', (e) => {
+            if (!e.target.matches('input[type=checkbox]')) return;
+            const tr = e.target.closest('tr');
+            if (!tr) return;
+            if (e.target.checked) {
+                enforceCourseSelectionLimit(tr);
+                syncAutoPairedCourses(tr, true);
+            } else {
+                syncAutoPairedCourses(tr, false);
+                enforceCourseSelectionLimit(tr);
+            }
+            updateCourseSelectionLimitHint();
+            window._admissionAutoSave && window._admissionAutoSave();
+        });
+    }
+
     function applyBscGroupSelection(groupKey) {
         const group = findBscGroup(groupKey);
         const groupName = getBscGroupFullName(groupKey);
@@ -1608,6 +1813,7 @@
         const resolvedProgramType = setProgramDropdown(programType) || normalizeProgramTypeForDropdown(programType);
         if (!resolvedProgramType) {
             tbody.innerHTML = '<tr><td colspan="4">Select a program type</td></tr>';
+            renderCourseInstructions([]);
             return;
         }
         const showBsc = isBscProgram(resolvedProgramType);
@@ -1629,6 +1835,10 @@
         if (json.subject_groups?.length) {
             bscSubjectGroups = json.subject_groups;
         }
+        renderCourseInstructions(json.course_instructions || []);
+        maxCourseSelections = json.max_course_selections > 0 ? json.max_course_selections : null;
+        optionalCheckOrder = [];
+        updateCourseSelectionLimitHint();
         if (showBsc) {
             setupBscGroupListeners();
             renderBscSubjectGroups();
@@ -1637,8 +1847,12 @@
         json.courses.forEach((c) => {
             const tr = document.createElement('tr');
             const isGroupCourse = !!c.is_group_course;
+            tr.dataset.courseId = String(c.id);
             tr.dataset.name = c.course_name;
             tr.dataset.department = c.department || '';
+            if (c.auto_select_course_id) {
+                tr.dataset.autoSelectId = String(c.auto_select_course_id);
+            }
             tr.dataset.type1 = c.course_type_1;
             tr.dataset.type2 = c.course_type_2;
             tr.dataset.dsc = c.is_dsc ? '1' : '0';
@@ -1655,7 +1869,7 @@
                 tr.hidden = true;
             }
             const groupCell = showBsc ? '<td>—</td>' : '';
-            tr.innerHTML = `<td><input type="checkbox" ${checked} ${locked}${title} onchange="window._admissionAutoSave && window._admissionAutoSave()"></td>
+            tr.innerHTML = `<td><input type="checkbox" ${checked} ${locked}${title}></td>
                 <td>${c.course_name}${compulsory ? ' <small class="compulsory-tag" style="color:#166534;font-weight:600;">(Compulsory)</small>' : ''}</td>
                 ${groupCell}
                 <td>${c.course_type_1 || '-'}</td><td>${c.course_type_2 || 'N/A'}</td>`;
@@ -1671,6 +1885,10 @@
                 resetBscGroupCoursesBeforeSelection();
             }
         }
+        bindCourseTableListeners();
+        syncAllAutoPairedCourses();
+        rebuildOptionalCheckOrder();
+        updateCourseSelectionLimitHint();
     }
 
     function eduClassName(edu) {
@@ -1881,6 +2099,9 @@
                             }
                         });
                     });
+                    syncAllAutoPairedCourses();
+                    rebuildOptionalCheckOrder();
+                    updateCourseSelectionLimitHint();
                 }
                 if (selectedBscGroup) {
                     const radio = document.querySelector(`input[name="bscSubjectGroup"][value="${selectedBscGroup}"]`);
@@ -1914,27 +2135,9 @@
         window.handlePreviewButtonVisibility();
 
         if (data._educationMergedFromLocal && !cfg.formDisabled) {
-            saveDraftNow({ education: savedEducation, activeStep: data.ActiveStep }).catch(err => {
+            saveDraftNow({ education: savedEducation, activeStep: 0 }).catch(err => {
                 console.error('Failed to sync merged education draft to server', err);
             });
-        }
-
-        if (data.ActiveStep != null && !Number.isNaN(Number(data.ActiveStep))) {
-            let activeStep = parseInt(data.ActiveStep, 10);
-            if ((data.WizardVersion || 1) < 2) {
-                const legacyMap = { 0: 3, 1: 0, 2: 1, 3: 2 };
-                if (legacyMap[activeStep] != null) activeStep = legacyMap[activeStep];
-            }
-            showStep(Math.min(Math.max(activeStep, 0), getSteps().length - 1));
-            updateTabStatus();
-            if (educationHasContent(educationSnapshot)) {
-                restoreEducationFromDraft({ Education: educationSnapshot });
-                refreshProgramOptionsFromEducation();
-            }
-            if (activeStep === 5) {
-                renderDeclarationSummary();
-                updateDeclarationActionsVisibility();
-            }
         }
         } finally {
             isRestoringData = false;
@@ -2049,6 +2252,7 @@
             console.error('Failed to restore admission draft', e);
         }
 
+        bindCourseTableListeners();
         bindEducationPersistence();
         bindSameAddressListeners();
 
@@ -2075,9 +2279,7 @@
             window.addEventListener('pagehide', snapshotDraftToLocal);
         }
 
-        if (current === 0) {
-            showStep(0);
-            updateTabStatus();
-        }
+        showStep(0);
+        updateTabStatus();
     });
 })();

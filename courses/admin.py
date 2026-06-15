@@ -2,7 +2,15 @@ from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html, format_html_join
 
-from .models import AcademicSession, College, Program, ProgramCourse, ProgramSubjectGroup
+from .forms import ProgramCourseInstructionForm
+from .models import (
+    AcademicSession,
+    College,
+    Program,
+    ProgramCourse,
+    ProgramCourseInstruction,
+    ProgramSubjectGroup,
+)
 from .subject_groups import (
     group_label_for_course,
     is_bsc_program,
@@ -44,6 +52,18 @@ class ProgramSubjectGroupInline(admin.TabularInline):
     )
 
 
+class ProgramCourseInstructionInline(admin.StackedInline):
+    model = ProgramCourseInstruction
+    form = ProgramCourseInstructionForm
+    extra = 0
+    fields = ('is_active', 'sort_order', 'title', 'message')
+    ordering = ('sort_order', 'id')
+    verbose_name = 'Course selection instruction'
+    verbose_name_plural = (
+        'Admission form instructions — shown above the course table when students select this program.'
+    )
+
+
 @admin.register(Program)
 class ProgramAdmin(admin.ModelAdmin):
     list_display = (
@@ -51,6 +71,7 @@ class ProgramAdmin(admin.ModelAdmin):
         'program_code',
         'program_level',
         'is_active',
+        'max_optional_course_selections',
         'course_count',
         'subject_group_count',
     )
@@ -59,9 +80,12 @@ class ProgramAdmin(admin.ModelAdmin):
     readonly_fields = ('related_courses_panel',)
 
     def get_inlines(self, request, obj=None):
-        if obj and is_bsc_program(obj.program_name):
-            return (ProgramSubjectGroupInline,)
-        return ()
+        if not obj:
+            return ()
+        inlines = [ProgramCourseInstructionInline]
+        if is_bsc_program(obj.program_name):
+            inlines.append(ProgramSubjectGroupInline)
+        return tuple(inlines)
 
     def get_readonly_fields(self, request, obj=None):
         if obj is None:
@@ -78,6 +102,7 @@ class ProgramAdmin(admin.ModelAdmin):
                         'program_level',
                         'is_nep_compliant',
                         'is_active',
+                        'max_optional_course_selections',
                         'legacy_id',
                     ),
                 }),
@@ -90,6 +115,7 @@ class ProgramAdmin(admin.ModelAdmin):
                     'program_level',
                     'is_nep_compliant',
                     'is_active',
+                    'max_optional_course_selections',
                     'legacy_id',
                 ),
             }),
@@ -261,6 +287,7 @@ class ProgramCourseAdmin(admin.ModelAdmin):
         'course_name',
         'program_type',
         'department',
+        'auto_select_course',
         'subject_group_display',
         'course_type_1',
         'course_type_2',
@@ -270,6 +297,25 @@ class ProgramCourseAdmin(admin.ModelAdmin):
     list_filter = ('program_type', 'course_type_1', 'course_type_2', 'is_compulsory')
     search_fields = ('course_name', 'program_type', 'department')
     ordering = ('program_type', 'sort_order', 'course_name')
+    raw_id_fields = ('auto_select_course',)
+    fieldsets = (
+        (None, {
+            'fields': (
+                'program_type',
+                'department',
+                'course_name',
+                'course_type_1',
+                'course_type_2',
+                'sort_order',
+                'is_compulsory',
+                'auto_select_course',
+            ),
+        }),
+        ('B.Sc. groups', {
+            'fields': ('subject_groups',),
+            'classes': ('collapse',),
+        }),
+    )
 
     @admin.display(description='Subject Group')
     def subject_group_display(self, obj):
@@ -286,6 +332,42 @@ class ProgramCourseAdmin(admin.ModelAdmin):
         if program_type:
             initial['program_type'] = program_type
         return initial
+
+
+@admin.register(ProgramCourseInstruction)
+class ProgramCourseInstructionAdmin(admin.ModelAdmin):
+    form = ProgramCourseInstructionForm
+    list_display = (
+        'program',
+        'title',
+        'message_preview',
+        'sort_order',
+        'is_active',
+        'updated_at',
+    )
+    list_filter = ('is_active', 'program__program_level', 'program__is_active')
+    search_fields = ('program__program_name', 'title', 'message')
+    autocomplete_fields = ('program',)
+    ordering = ('program__program_name', 'sort_order', 'id')
+    fieldsets = (
+        (None, {
+            'fields': ('program', 'is_active', 'sort_order'),
+        }),
+        ('Instruction', {
+            'fields': ('title', 'message'),
+            'description': (
+                'This text appears on the admission form above the course table '
+                'when a student selects the chosen program.'
+            ),
+        }),
+    )
+
+    @admin.display(description='Message preview')
+    def message_preview(self, obj):
+        text = (obj.message or '').strip().replace('\n', ' ')
+        if len(text) > 80:
+            return f'{text[:80]}…'
+        return text or '—'
 
 
 admin.site.register(College)

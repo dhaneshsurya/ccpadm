@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import random
 import re
 import secrets
@@ -7,6 +8,8 @@ from datetime import timedelta
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 
 def is_valid_email(email):
@@ -81,15 +84,31 @@ def send_registration_email(email, name, reg_no, password):
 
 
 def send_otp_email(email, otp):
-    if not email or not settings.EMAIL_HOST_USER:
-        return
-    send_mail(
-        'Password Reset OTP - Chaitanya College',
-        f'Your OTP is: {otp}\nValid for 10 minutes.',
-        settings.DEFAULT_FROM_EMAIL,
-        [email],
-        fail_silently=True,
-    )
+    if not email:
+        return False
+
+    subject = 'Password Reset OTP - Chaitanya College'
+    body = f'Your OTP is: {otp}\nValid for 10 minutes.'
+
+    if not settings.EMAIL_HOST_USER:
+        if settings.DEBUG:
+            logger.warning('EMAIL not configured. OTP for %s: %s', email, otp)
+            return True
+        logger.error('EMAIL_HOST_USER is not configured; cannot send OTP to %s', email)
+        return False
+
+    try:
+        send_mail(
+            subject,
+            body,
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+        )
+        return True
+    except Exception:
+        logger.exception('Failed to send OTP email to %s', email)
+        return False
 
 
 def mask_aadhaar(aadhaar):

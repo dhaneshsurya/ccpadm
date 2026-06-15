@@ -7,7 +7,8 @@ from django.views.decorators.http import require_http_methods
 
 from accounts.models import Student
 from accounts.utils import get_student_sidebar_context, student_login_required
-from courses.models import ProgramCourse
+from courses.instructions import get_program_course_instructions
+from courses.models import Program, ProgramCourse
 from courses.subject_groups import (
     BSC_PROGRAM,
     course_is_group_course,
@@ -107,6 +108,7 @@ def courses_api(request):
     )
     courses = (
         ProgramCourse.objects.filter(program_type=course_program_type)
+        .select_related('auto_select_course')
         .prefetch_related('subject_groups')
         .order_by('sort_order', 'course_name')
     )
@@ -130,12 +132,28 @@ def courses_api(request):
             'is_group_dsc': is_group_dsc,
             'is_dsc': (c.course_type_2 or '').strip().upper() == 'DSC',
             'group_keys': get_assigned_group_keys(c),
+            'auto_select_course_id': (
+                (c.auto_select_course.legacy_id or c.auto_select_course.pk)
+                if c.auto_select_course_id
+                else None
+            ),
         })
+
+    program_row = Program.objects.filter(program_name=program_type).only(
+        'max_optional_course_selections',
+    ).first()
+    max_course_selections = (
+        program_row.max_optional_course_selections
+        if program_row and program_row.max_optional_course_selections
+        else None
+    )
 
     payload = {
         'courses': data,
         'program_type': program_type,
         'resolved_program_type': course_program_type,
+        'course_instructions': get_program_course_instructions(program_type),
+        'max_course_selections': max_course_selections,
     }
     if show_bsc:
         payload['subject_groups'] = get_bsc_subject_group_sections(program_type)

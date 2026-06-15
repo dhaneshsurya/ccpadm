@@ -5,6 +5,7 @@ from datetime import timedelta
 from django.contrib import messages
 from django.db.models import Q
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
@@ -243,52 +244,101 @@ def student_dashboard(request):
     return render(request, 'accounts/student_dashboard.html', ctx)
 
 
+_RESET_SESSION_KEYS = ('reset_email', 'reset_step', 'otp_verified')
+
+
+def _clear_reset_session(request):
+    for key in _RESET_SESSION_KEYS:
+        request.session.pop(key, None)
+
+
+def _forgot_password_redirect(step='find'):
+    if step == 'find':
+        return redirect('forgot_password')
+    return redirect(f'{reverse("forgot_password")}?step={step}')
+
+
+def _send_password_reset_otp(request, email):
+    otp = generate_otp()
+    PasswordResetOTP.objects.create(
+        email=email,
+        otp_hash=hash_otp(otp),
+        expiry_at=timezone.now() + timedelta(minutes=10),
+    )
+    sent = send_otp_email(email, otp)
+    if sent:
+        request.session['reset_email'] = email
+        request.session['reset_step'] = 'verify'
+    return sent
+
+
 @require_http_methods(['GET', 'POST'])
 def forgot_password(request):
-    program_types = get_program_names()
-    found_user = request.session.get('reset_user')
-    step = request.session.get('reset_step', 'find')
+    step = 'find'
+    reset_email = None
+
+    if request.method == 'GET':
+        step_param = request.GET.get('step')
+        if step_param in ('verify', 'reset'):
+            reset_email = request.session.get('reset_email')
+            session_step = request.session.get('reset_step', 'find')
+            if step_param == 'verify' and reset_email and session_step == 'verify':
+                step = 'verify'
+            elif (
+                step_param == 'reset'
+                and reset_email
+                and session_step == 'reset'
+                and request.session.get('otp_verified')
+            ):
+                step = 'reset'
+            else:
+                _clear_reset_session(request)
+        else:
+            _clear_reset_session(request)
 
     if request.method == 'POST':
         action = request.POST.get('action', 'find')
 
         if action == 'find':
-            name = request.POST.get('name', '').strip()
             email = request.POST.get('email', '').strip().lower()
-            program = request.POST.get('program_type', '')
-            student = Student.objects.filter(
-                full_name__iexact=name, email__iexact=email, program_type=program
-            ).first()
-            if student:
-                request.session['reset_user'] = {
-                    'name': student.full_name,
-                    'email': student.email,
-                    'course': student.course_name,
-                }
-                request.session['reset_email'] = student.email
-                request.session['reset_step'] = 'choose'
-                messages.success(request, 'Account found.')
-            else:
-                messages.error(request, 'Account not found.')
-            return redirect('forgot_password')
+            if not is_valid_email(email):
+                messages.error(request, 'Please enter a valid email address.')
+                return _forgot_password_redirect()
 
-        if action == 'send_otp':
+            student = Student.objects.filter(email__iexact=email).first()
+            if student:
+                if _send_password_reset_otp(request, student.email):
+                    messages.success(
+                        request,
+                        'OTP has been sent to your registered email. Check your inbox.',
+                    )
+                    return _forgot_password_redirect('verify')
+                messages.error(
+                    request,
+                    'Could not send OTP email. Email service is not configured correctly. '
+                    'Please contact the college office.',
+                )
+                return _forgot_password_redirect()
+            messages.error(
+                request,
+                'No account found with this email. Use the same email you used during registration.',
+            )
+            return _forgot_password_redirect()
+
+        if action in ('send_otp', 'resend_otp'):
             email = request.session.get('reset_email')
             if not email:
-                return redirect('forgot_password')
-            otp = generate_otp()
-            PasswordResetOTP.objects.create(
-                email=email,
-                otp_hash=hash_otp(otp),
-                expiry_at=timezone.now() + timedelta(minutes=10),
-            )
-            send_otp_email(email, otp)
-            request.session['reset_step'] = 'verify'
-            messages.info(request, 'OTP sent to your email.')
-            return redirect('forgot_password')
+                return _forgot_password_redirect()
+            if _send_password_reset_otp(request, email):
+                messages.info(request, 'A new OTP has been sent to your registered email.')
+                return _forgot_password_redirect('verify')
+            messages.error(request, 'Could not resend OTP. Email service is not configured correctly.')
+            return _forgot_password_redirect()
 
         if action == 'verify_otp':
             email = request.session.get('reset_email')
+            if not email:
+                return _forgot_password_redirect()
             otp_input = request.POST.get('otp', '').strip()
             record = (
                 PasswordResetOTP.objects.filter(email=email, is_used=False)
@@ -297,35 +347,37 @@ def forgot_password(request):
             )
             if not record or record.expiry_at < timezone.now():
                 messages.error(request, 'OTP expired. Please request a new one.')
-            elif record.otp_hash != hash_otp(otp_input):
+                return _forgot_password_redirect('verify')
+            if record.otp_hash != hash_otp(otp_input):
                 record.attempts += 1
                 record.save(update_fields=['attempts'])
                 messages.error(request, 'Invalid OTP.')
-            else:
-                record.is_used = True
-                record.save(update_fields=['is_used'])
-                request.session['otp_verified'] = True
-                request.session['reset_step'] = 'reset'
-                messages.success(request, 'OTP verified.')
-            return redirect('forgot_password')
+                return _forgot_password_redirect('verify')
+            record.is_used = True
+            record.save(update_fields=['is_used'])
+            request.session['otp_verified'] = True
+            request.session['reset_step'] = 'reset'
+            messages.success(request, 'OTP verified.')
+            return _forgot_password_redirect('reset')
 
         if action == 'reset_password':
             if not request.session.get('otp_verified'):
-                return redirect('forgot_password')
+                return _forgot_password_redirect()
             new_pass = request.POST.get('new_password', '').strip()
             confirm = request.POST.get('confirm_password', '').strip()
             if not new_pass or new_pass != confirm:
                 messages.error(request, 'Passwords do not match.')
-            else:
-                email = request.session.get('reset_email')
-                Student.objects.filter(email__iexact=email).update(password=new_pass)
-                for key in ('reset_user', 'reset_email', 'reset_step', 'otp_verified'):
-                    request.session.pop(key, None)
-                messages.success(request, 'Password reset successful. Please login.')
-                return redirect('login')
+                return _forgot_password_redirect('reset')
+            email = request.session.get('reset_email')
+            Student.objects.filter(email__iexact=email).update(password=new_pass)
+            _clear_reset_session(request)
+            messages.success(request, 'Password reset successful. Please login.')
+            return redirect('login')
+
+    if step != 'find':
+        reset_email = request.session.get('reset_email')
 
     return render(request, 'accounts/forgot_password.html', {
-        'program_types': program_types,
-        'found_user': found_user,
         'step': step,
+        'reset_email': reset_email,
     })
