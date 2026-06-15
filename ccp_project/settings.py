@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-h^52rm#acw))4_ja$k8k5#b5oforfv7&tok#+dpyrb-xvyhe%v')
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes')
-ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,13.49.229.197,csaconline.in,www.csaconline.in').split(',') if h.strip()]
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,13.49.229.197,csaconline.in,www.csaconline.in,online.chaitanyacg.ac.in').split(',') if h.strip()]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
