@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - {{ student.full_name }}{% endblock %}
+
+{% block content %}
+<div class="portal-page">
+    <div class="portal-layout">
+        {% include 'partials/student_sidebar.html' %}
+
+        <div class="portal-main">
+            <div class="page-header">
+                <h2 class="page-title">Welcome, {{ student.full_name }}</h2>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-card">
+                    <label>Registration No</label>
+                    <p>{{ student.registration_no }}</p>
+                </div>
+                <div class="info-card">
+                    <label>Email</label>
+                    <p>{{ student.email }}</p>
+                </div>
+                <div class="info-card">
+                    <label>Mobile</label>
+                    <p>{{ student.mobile }}</p>
+                </div>
+                <div class="info-card">
+                    <label>Aadhaar</label>
+                    <p>{{ masked_aadhaar }}</p>
+                </div>
+                <div class="info-card">
+                    <label>Program</label>
+                    <p>{{ program_display }}</p>
+                </div>
+                <div class="info-card info-card--wide">
+                    <label>Selected Courses</label>
+                    {% if selected_subjects %}
+                    <ul class="dashboard-course-list">
+                        {% for subject in selected_subjects %}
+                        <li>
+                            <span class="dashboard-course-name">{{ subject.name }}</span>
+                            {% if subject.type2 or subject.type1 %}
+                            <span class="dashboard-course-meta">{% firstof subject.type2 subject.type1 %}</span>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% elif courses_display %}
+                    <p>{{ courses_display }}</p>
+                    {% else %}
+                    <p>Not Selected</p>
+                    {% endif %}
+                </div>
+                {% if admission %}
+                <div class="info-card">
+                    <label>Application No</label>
+                    <p>{{ admission.application_no }}</p>
+                </div>
+                <div class="info-card">
+                    <label>Status</label>
+                    <p><span class="badge badge-success">{{ admission.status }}</span></p>
+                </div>
+                {% else %}
+                <div class="info-card">
+                    <label>Status</label>
+                    <p><span class="badge badge-warning">Not Submitted</span></p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="action-row">
+                {% if admission %}
+                <a href="{% url 'preview_application' %}?app_no={{ admission.application_no }}" class="btn btn-primary" target="_blank">
+                    <i class="fas fa-print"></i> Print Application
+                </a>
+                <a href="{% url 'download_pdf' admission.application_no %}" class="btn btn-secondary" target="_blank">
+                    <i class="fas fa-file-pdf"></i> Download PDF
+                </a>
+                {% else %}
+                <a href="{% url 'fill_admission_form' %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Fill Admission Form
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

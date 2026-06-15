@@ -1,0 +1,396 @@
+﻿/* ============================================================
+   1. GLOBAL RESET
+============================================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+    font-family: 'Poppins',sans-serif;
+    scroll-behavior: smooth;
+}
+
+    /* ============================================================
+   2. GLASS BACKGROUND
+============================================================ */
+
+    body.glass-bg::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: url('../images/clg.png') center/cover no-repeat;
+        filter: blur(2px) brightness(0.95);
+        transform: scale(1.02);
+        z-index: -2;
+    }
+
+    body.glass-bg::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(6,40,61,0.15);
+        z-index: -1;
+    }
+
+/* ============================================================
+   3. COMMON LAYOUTS
+============================================================ */
+
+.layout-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.layout-column {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 20px;
+}
+
+/* ============================================================
+   4. HEADER
+============================================================ */
+
+.college-header-top {
+    position: sticky;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 9999;
+    padding: 15px 25px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    transition: padding 0.35s ease, transform 0.35s ease, background 0.35s ease;
+    will-change: transform;
+}
+
+    /* SHRINK MODE */
+
+    .college-header-top.shrink {
+        padding: 10px 20px;
+    }
+
+    /* HIDE MODE */
+
+    .college-header-top.hide {
+        transform: translateY(-100%);
+    }
+
+/* ============================================================
+   5. HEADER CONTENT
+============================================================ */
+
+.header-container,
+.header-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.college-logo,
+.naac-logo {
+    height: 70px;
+    width: auto;
+    object-fit: contain;
+}
+
+.affiliation-text {
+    margin: 2px 0 0 0;
+    font-size: 0.85rem;
+    color: #0b3d91;
+}
+
+.messages-container {
+    max-width: 900px;
+    margin: 0 auto 16px;
+}
+
+.alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.alert-error, .alert-danger { background: #fee2e2; color: #991b1b; }
+.alert-success { background: #dcfce7; color: #166534; }
+.alert-info { background: #dbeafe; color: #1e40af; }
+
+.site-footer {
+    text-align: center;
+    padding: 20px;
+    color: rgba(255,255,255,0.7);
+    font-size: 13px;
+}
+
+/* ============================================================
+   6. COLLEGE INFO
+============================================================ */
+
+.college-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 14px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.92);
+    transition: 0.3s ease;
+}
+
+    .college-info h3 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        background: linear-gradient(90deg,#ff4d4d,#c9302c);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        transition: transform 0.4s ease, text-shadow 0.4s ease;
+        cursor: pointer;
+    }
+
+        /* Hover animation effect */
+        .college-info h3:hover {
+            animation: shineText 1s linear infinite;
+            transform: scale(1.05);
+            text-shadow: 0 0 12px rgba(255,77,77,0.6);
+        }
+
+/* Gradient moving effect */
+@keyframes shineText {
+    0% {
+        background-position: 0% center;
+    }
+
+    100% {
+        background-position: 200% center;
+    }
+}
+
+    .college-info h4 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #dbb905;
+    }
+
+    .college-info h5 {
+        font-size: 0.8rem;
+        color: #06283D;
+    }
+
+/* SHRINK TEXT */
+
+.college-header-top.shrink .college-info h3 {
+    font-size: 1.1rem;
+}
+
+.college-header-top.shrink .college-info h4 {
+    font-size: 0.8rem;
+}
+
+.college-header-top.shrink .college-info h5 {
+    font-size: 0.7rem;
+}
+
+/* ============================================================
+   7. LOGOS
+============================================================ */
+
+.logo-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.emblem-box {
+    background: rgba(255,255,255,0.9);
+    padding: 8px;
+    border-radius: 12px;
+    width: 75px;
+    height: 75px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.3s ease;
+}
+
+    .emblem-box img {
+        max-width: 100%;
+        max-height: 55px;
+        object-fit: contain;
+    }
+
+/* SHRINK LOGO */
+
+.college-header-top.shrink .emblem-box {
+    width: 60px;
+    height: 60px;
+}
+
+    .college-header-top.shrink .emblem-box img {
+        max-height: 45px;
+    }
+
+/* ============================================================
+   8. MAIN LAYOUT
+============================================================ */
+
+.layout-wrapper {
+    width: 100%;
+    min-height: calc(100vh - 20px);
+    padding: 20px;
+}
+
+.page-container {
+    width: 100%;
+    min-height: 100%;
+}
+
+.content-scroll {
+    width: 100%;
+    min-height: auto;
+}
+
+/* ============================================================
+   9. MAIN BODY CONTENT
+============================================================ */
+
+.main-body-content {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+}
+
+/* ============================================================
+   10. CARDS
+============================================================ */
+
+.card,
+.login-card-box,
+.home-card-box,
+.reg-card-box {
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.35);
+    transition: 0.3s ease;
+}
+
+    .card:hover,
+    .login-card-box:hover,
+    .home-card-box:hover,
+    .reg-card-box:hover {
+        transform: translateY(-4px) scale(1.01);
+    }
+
+/* ============================================================
+   11. INPUTS
+============================================================ */
+
+.login-input,
+.reg-input {
+    width: 100%;
+    padding: 12px 14px;
+    margin: 8px 0;
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,0.15);
+    background: #fff;
+    color: #222;
+    outline: none;
+    transition: 0.3s ease;
+}
+
+    .login-input:focus,
+    .reg-input:focus {
+        border-color: #0078ff;
+        box-shadow: 0 0 0 3px rgba(0,120,255,0.15);
+    }
+
+/* ============================================================
+   12. BUTTONS
+============================================================ */
+
+button,
+input[type="submit"],
+input[type="button"] {
+    cursor: pointer;
+}
+
+/* ============================================================
+   13. RESPONSIVE
+============================================================ */
+
+@media (max-width:768px) {
+
+    .college-header-top {
+        padding: 12px;
+    }
+
+    .header-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .college-info {
+        width: 100%;
+    }
+
+        .college-info h3 {
+            font-size: 1rem;
+        }
+
+        .college-info h4 {
+            font-size: 0.75rem;
+        }
+
+        .college-info h5 {
+            font-size: 0.65rem;
+        }
+
+    .logo-group {
+        margin-top: 10px;
+    }
+
+    .emblem-box {
+        width: 60px;
+        height: 60px;
+    }
+
+        .emblem-box img {
+            max-height: 42px;
+        }
+
+    .reg-card-box,
+    .login-card-box,
+    .home-card-box {
+        width: 100%;
+        padding: 20px;
+    }
+
+    .layout-wrapper {
+        padding: 12px;
+    }
+
+    .main-body-content {
+        padding: 10px;
+    }
+}

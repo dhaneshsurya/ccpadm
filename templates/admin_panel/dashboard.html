@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="portal-page">
+    <div class="portal-main">
+        <div class="page-header">
+            <h2 class="page-title"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h2>
+            <div class="page-actions">
+                <a href="{% url 'manage_programs' %}"><i class="fas fa-layer-group"></i> Manage Programs</a>
+                <a href="{% url 'manage_courses' %}"><i class="fas fa-book"></i> Manage Courses</a>
+                <a href="{% url 'manage_students' %}"><i class="fas fa-users"></i> Students</a>
+                <a href="{% url 'admin_logout' %}" class="link-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+
+        <div class="stat-grid">
+            <div class="stat-card">
+                <h3>{{ stats.total_admissions }}</h3>
+                <p>Total Admissions</p>
+            </div>
+            <div class="stat-card">
+                <h3>{{ stats.submitted }}</h3>
+                <p>Submitted</p>
+            </div>
+            <div class="stat-card">
+                <h3>{{ stats.pending }}</h3>
+                <p>Pending</p>
+            </div>
+            <div class="stat-card">
+                <h3>{{ stats.approved }}</h3>
+                <p>Approved</p>
+            </div>
+            <div class="stat-card">
+                <h3>{{ stats.rejected }}</h3>
+                <p>Rejected</p>
+            </div>
+            <div class="stat-card">
+                <h3>{{ stats.students }}</h3>
+                <p>Students</p>
+            </div>
+        </div>
+
+        <h3 class="section-title">Recent Applications</h3>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>App No</th>
+                        <th>Name</th>
+                        <th>Reg No</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in recent %}
+                    <tr>
+                        <td>{{ a.application_no|default:"—" }}</td>
+                        <td>{{ a.full_name }}</td>
+                        <td>{{ a.reg_no }}</td>
+                        <td>
+                            {% if a.status == 'Approved' %}
+                            <span class="badge badge-success">{{ a.status }}</span>
+                            {% elif a.status == 'Rejected' %}
+                            <span class="badge badge-danger">{{ a.status }}</span>
+                            {% elif a.status == 'Submitted' %}
+                            <span class="badge badge-info">{{ a.status }}</span>
+                            {% else %}
+                            <span class="badge badge-warning">{{ a.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form method="post" action="{% url 'update_admission_status' a.pk %}" class="inline-form">
+                                {% csrf_token %}
+                                <select name="status" onchange="this.form.submit()">
+                                    <option value="">Change...</option>
+                                    <option value="Approved">Approve</option>
+                                    <option value="Rejected">Reject</option>
+                                    <option value="Pending">Pending</option>
+                                </select>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr class="empty-row">
+                        <td colspan="5">No applications yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

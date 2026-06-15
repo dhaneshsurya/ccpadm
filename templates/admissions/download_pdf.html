@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Download PDF{% endblock %}
+
+{% block content %}
+<div class="portal-page">
+    <div class="portal-layout">
+        {% include 'partials/student_sidebar.html' %}
+
+        <div class="portal-main">
+            <div class="page-header">
+                <h2 class="page-title"><i class="fas fa-file-pdf"></i> Download Application PDF</h2>
+            </div>
+
+            {% if admission %}
+            <div class="info-grid">
+                <div class="info-card">
+                    <label>Application No</label>
+                    <p>{{ admission.application_no }}</p>
+                </div>
+                <div class="info-card">
+                    <label>Registration No</label>
+                    <p>{{ admission.reg_no }}</p>
+                </div>
+                <div class="info-card">
+                    <label>Submitted</label>
+                    <p>{{ admission.submitted_date|date:"d M Y, h:i A" }}</p>
+                </div>
+            </div>
+
+            <div class="action-row">
+                <a href="{% url 'print_application' admission.application_no %}" class="btn btn-ghost" target="_blank">
+                    <i class="fas fa-print"></i> View / Print
+                </a>
+                <a href="{% url 'download_pdf' admission.application_no %}" class="btn btn-primary">
+                    <i class="fas fa-download"></i> Download PDF
+                </a>
+            </div>
+            {% else %}
+            <div class="notice-banner notice-banner--info">
+                <i class="fas fa-info-circle"></i>
+                No submitted application found. Please complete and submit your admission form first.
+            </div>
+            <div class="action-row">
+                <a href="{% url 'fill_admission_form' %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Go to Admission Form
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

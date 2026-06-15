@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admission Form - Chaitanya College{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admission_form.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="portal-page">
+    <div class="portal-layout">
+        {% include 'partials/student_sidebar.html' %}
+
+        <div class="admission-main portal-main portal-main--form">
+            {% if submitted and not form_disabled %}
+            <div class="notice-banner notice-banner--info">
+                <strong>Application Submitted</strong> — App No: {{ submitted.application_no }}.
+                You can still edit and save updates until the application is approved.
+                <a href="{% url 'preview_application' %}?app_no={{ submitted.application_no }}" target="_blank">Preview</a>
+            </div>
+            {% elif submitted %}
+            <div class="notice-banner notice-banner--success">
+                <strong>Form Submitted</strong> — Application No: {{ submitted.application_no }}.
+                <a href="{% url 'preview_application' %}?app_no={{ submitted.application_no }}" target="_blank">Print</a>
+                <a href="{% url 'download_pdf' submitted.application_no %}">Download PDF</a>
+            </div>
+            {% endif %}
+
+            <input type="hidden" id="hdnActiveStep" value="0">
+
+            <div class="tabs-wrapper">
+                <div class="tabs" id="formTabs">
+                    <button type="button" class="tab-btn active" onclick="jumpToStep(0)">Basic Details</button>
+                    <button type="button" class="tab-btn" onclick="jumpToStep(1)">Address</button>
+                    <button type="button" class="tab-btn" onclick="jumpToStep(2)">Education</button>
+                    <button type="button" class="tab-btn" onclick="jumpToStep(3)">Course</button>
+                    <button type="button" class="tab-btn" onclick="jumpToStep(4)">Photo & Sign</button>
+                    <button type="button" class="tab-btn" onclick="jumpToStep(5)">Submit</button>
+                </div>
+            </div>
+
+            <!-- Step 0: Basic -->
+            <div class="form-step active" data-step="0">
+                <h2>Basic Details</h2>
+                <p class="form-hint">
+                    Name, Father, Mother & DOB must match Class 10 certificate.
+                </p>
+                <div class="grid">
+                    <div class="field"><label>Full Name *</label><input type="text" id="txtName" value="{{ student.full_name }}" required {% if form_disabled %}disabled{% endif %}></div>
+                    <div class="field"><label>Father's Name *</label><input type="text" id="txtFather" required {% if form_disabled %}disabled{% endif %}></div>
+                    <div class="field"><label>Mother's Name *</label><input type="text" id="txtMother" required {% if form_disabled %}disabled{% endif %}></div>
+                    <div class="field"><label>Gender *</label>
+                        <select id="ddlGender" required {% if form_disabled %}disabled{% endif %}>
+                            <option value="">Select</option><option>Male</option><option>Female</option><option>Other</option>
+                        </select>
+                    </div>
+                    <div class="field"><label>Category *</label>
+                        <select id="ddlCategory" required {% if form_disabled %}disabled{% endif %}>
+                            <option value="">Select</option>
+                            <option>General</option><option>OBC</option><option>SC</option><option>ST</option><option>EWS</option>
+                        </select>
+                    </div>
+                    <div class="field"><label>Nationality</label><input type="text" id="txtNationality" value="Indian" readonly></div>
+                    <div class="field"><label for="ddlReligion">Religion</label>
+                        <select id="ddlReligion" {% if form_disabled %}disabled{% endif %}>
+                            <option value="">Select</option>
+                            {% for religion in religion_choices %}
+                            <option value="{{ religion }}">{{ religion }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="field"><label>Marital Status</label>
+                        <select id="ddlMaritalStatus" {% if form_disabled %}disabled{% endif %}>
+                            <option value="">Select</option><option>Single</option><option>Married</option>
+                        </select>
+                    </div>
+                    <div class="field"><label>Blood Group</label>
+                        <select id="ddlBloodGroup" {% if form_disabled %}disabled{% endif %}>
+                            <option value="">Select</option>
+                            <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                            <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+                        </select>
+                    </div>
+                    <div class="field"><label>Date of Birth *</label><input type="date" id="txtDOB" required {% if form_disabled %}disabled{% endif %}></div>
+                    <div class="field"><label>Mobile *</label><input type="tel" id="txtMobile" value="{{ student.mobile }}" maxlength="10" required {% if form_disabled %}disabled{% endif %}></div>
+                    <div class="field"><label>Email *</label><input type="email" id="txtEmail" value="{{ student.email }}" required {% if form_disabled %}disabled{% endif %}></div>
+                    <div class="field"><label>Aadhaar *</label><input type="text" id="txtAadhaar" value="{{ student.aadhaar }}" maxlength="12" required {% if form_disabled %}disabled{% endif %}></div>
+                    <div class="field"><label>ABC / APAAR</label><input type="text" id="txtApaar" maxlength="12" {% if form_disabled %}disabled{% endif %}></div>
+                    <div class="field"><label>Disability</label>
+                        <select id="ddlDisabilityCertificate" onchange="toggleDisabilityFields()" {% if form_disabled %}disabled{% endif %}>
+                            <option value="No">No</option><option value="Yes">Yes</option>
+                        </select>
+                    </div>
+                    <div id="disabilitySection" class="full-width" style="display:none;">
+                        <div class="grid">
+                            <div class="field"><label>Details</label><input type="text" id="txtDisabilityDetails"></div>
+                            <div class="field"><label>Percentage</label><input type="text" id="txtDisabilityPercentage"></div>
+                            <div class="field"><label>Type</label><input type="text" id="txtDisabilityType"></div>
+                        </div>
+                    </div>
+                    <div class="field"><label>Minority</label><select id="ddlMinority" {% if form_disabled %}disabled{% endif %}><option value="">Select</option><option>No</option><option>Yes</option></select></div>
+                    <div class="field"><label for="ddlMedium">Medium</label>
+                        <select id="ddlMedium" {% if form_disabled %}disabled{% endif %}>
+                            <option value="">Select</option>
+                            {% for medium in medium_choices %}
+                            <option value="{{ medium }}">{{ medium }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 1: Address -->
+            <div class="form-step" data-step="1">
+                <h2>Address Details</h2>
+                <h4>Permanent Address</h4>
+                <div class="address-block"><div class="grid">
+                    <div class="form-group"><label for="txtPerState">State *</label>
+                        <select id="txtPerState" required {% if form_disabled %}disabled{% endif %}>
+                            <option value="">Select State</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label for="txtPerDistrict">District *</label>
+                        <select id="txtPerDistrict" required disabled {% if form_disabled %}disabled{% endif %}>
+                            <option value="">Select state first</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>City *</label><input type="text" id="txtPerCity" required {% if form_disabled %}disabled{% endif %}></div>
+                    <div class="form-group"><label>Village *</label><input type="text" id="txtPerVillage" required {% if form_disabled %}disabled{% endif %}></div>
+                    <div class="form-group"><label>PIN *</label><input type="text" id="txtPerPin" maxlength="6" required {% if form_disabled %}disabled{% endif %}></div>
+                </div></div>
+                <label class="same-address-label"><input type="checkbox" id="chkSameAddress" onchange="copyAddress()"> Same as Permanent Address</label>
+                <h4>Correspondence Address</h4>
+                <div class="address-block"><div class="grid">
+                    <div class="form-group"><label for="txtCorState">State *</label>
+                        <select id="txtCorState" required {% if form_disabled %}disabled{% endif %}>
+                            <option value="">Select State</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label for="txtCorDistrict">District *</label>
+                        <select id="txtCorDistrict" required disabled {% if form_disabled %}disabled{% endif %}>
+                            <option value="">Select state first</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>City *</label><input type="text" id="txtCorCity" required {% if form_disabled %}disabled{% endif %}></div>
+                    <div class="form-group"><label>Village *</label><input type="text" id="txtCorVillage" required {% if form_disabled %}disabled{% endif %}></div>
+                    <div class="form-group"><label>PIN *</label><input type="text" id="txtCorPin" maxlength="6" required {% if form_disabled %}disabled{% endif %}></div>
+                </div></div>
+            </div>
+
+            <!-- Step 2: Education -->
+            <div class="form-step" data-step="2">
+                <h2>Education Details</h2>
+                <p class="form-hint">10th and 12th are compulsory. B.Sc. is shown only for 12th Science stream. Add Graduation with stream for Post Graduate and P.G.D.C.A. programs.</p>
+                <div class="edu-table">
+                    <div class="edu-head"><div>Class</div><div>Board / University</div><div>Stream</div><div>Duration</div><div>Year</div><div>Total</div><div>Obtained</div><div>%</div><div>Grade</div><div></div></div>
+                    <div id="row10th" class="edu-row edu-data-row">
+                        <input class="class-name" id="txtClass10" value="10th" placeholder="10th">
+                        <select class="board" id="txtBoard10" required {% if form_disabled %}disabled{% endif %}>
+                            <option value="">Select Board</option>
+                        </select>
+                        <div class="edu-stream-na">—</div>
+                        <input class="duration" id="txtDuration10" placeholder="1">
+                        <input class="year" id="txtYear10" placeholder="2024" required>
+                        <input class="total-marks" id="txtTotalMarks10" onkeyup="calculateRowPercentage(this)" required>
+                        <input class="obtainedmarks" id="txtMarksObtained10" onkeyup="calculateRowPercentage(this)" required>
+                        <input class="percentage" id="txtPercentage10" readonly>
+                        <input class="grade" id="txtGrade10" placeholder="Div">
+                        <div></div>
+                    </div>
+                    <div id="row12th" class="edu-row edu-data-row">
+                        <input class="class-name" id="txtClass12" value="12th">
+                        <select class="board" id="txtBoard12" required {% if form_disabled %}disabled{% endif %}>
+                            <option value="">Select Board</option>
+                        </select>
+                        <select class="stream" id="ddlStream12" required {% if form_disabled %}disabled{% endif %}>
+                            <option value="">Select Stream</option>
+                            <option value="Science">Science</option>
+                            <option value="Arts">Arts</option>
+                            <option value="Commerce">Commerce</option>
+                        </select>
+                        <input class="duration" id="txtDuration12">
+                        <input class="year" id="txtYear12" placeholder="2024" required>
+                        <input class="total-marks" id="txtTotalMarks12" onkeyup="calculateRowPercentage(this)" required>
+                        <input class="obtainedmarks" id="txtMarksObtained12" onkeyup="calculateRowPercentage(this)" required>
+                        <input class="percentage" id="txtPercentage12" readonly>
+                        <input class="grade" id="txtGrade12">
+                        <div></div>
+                    </div>
+                    <div id="rowGrad" class="edu-row edu-data-row hidden-row" style="display:none;">
+                        <input class="class-name" id="txtClassGrad" placeholder="Graduation">
+                        <select class="board" id="txtBoardGrad" {% if form_disabled %}disabled{% endif %}>
+                            <option value="">Select University</option>
+                        </select>
+                        <select class="stream" id="ddlStreamGrad" {% if form_disabled %}disabled{% endif %}>
+                            <option value="">Select Stream</option>
+                            <option value="Science">Science</option>
+                            <option value="Arts">Arts</option>
+                            <option value="Commerce">Commerce</option>
+                        </select>
+                        <input class="duration" id="txtDurationGrad"><input class="year" id="txtYearGrad">
+                        <input class="total-marks" id="txtTotalMarksGrad" onkeyup="calculateRowPercentage(this)">
+                        <input class="obtainedmarks" id="txtMarksObtainedGrad" onkeyup="calculateRowPercentage(this)">
+                        <input class="percentage" id="txtPercentageGrad" readonly><input class="grade" id="txtGradeGrad">
+                        <button type="button" class="btn-delete" onclick="removeRowDirect('Grad')">Remove</button>
+                    </div>
+                </div>
+                <div class="edu-buttons-panel">
+                    <button type="button" id="btnAddGrad" class="btn-add" onclick="showRowDirect('Grad')">+ Add Graduation</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Course -->
+            <div class="form-step" data-step="3">
+                <h2>Course Details</h2>
+                <div id="courseEligibilityHint" class="notice-banner notice-banner--info" hidden>
+                    <strong>Complete Education first</strong> — Fill 12th with stream for Under Graduate / D.C.A. B.Sc. requires Science stream. Add Graduation with stream for Post Graduate and P.G.D.C.A.
+                </div>
+                <div class="grid">
+                    <div class="field">
+                        <label for="ddlProgramLevel">Program Type *</label>
+                        <select id="ddlProgramLevel" class="modern-select" required {% if form_disabled %}disabled{% endif %}>
+                            <option value="">-- Select Program Type --</option>
+                            {% for lvl in program_level_choices %}
+                            <option value="{{ lvl.value }}" {% if selected_program_level == lvl.value %}selected{% endif %}>{{ lvl.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="ddlProgramType">Program Name *</label>
+                        <select id="ddlProgramType" class="modern-select" required {% if form_disabled %}disabled{% endif %}>
+                            <option value="">-- Select Program Name --</option>
+                        </select>
+                        <small class="field-hint">Programs are filtered from your Education details (12th / Graduation stream).</small>
+                    </div>
+                    <div id="bscGroupSection" class="bsc-group-section full-width" hidden>
+                        <label class="bsc-group-label">B.Sc. Subject Group *</label>
+                        <p class="bsc-group-hint">Select one group below. All DSC subjects in that group will be compulsory.</p>
+                        <div id="bscSelectedGroupName" class="selected-group-badge" hidden></div>
+                        <div id="bscSubjectGroups" class="subject-group-panel"></div>
+                    </div>
+                    <div class="full-width table-scroll">
+                        <table class="course-table">
+                            <thead id="courseTableHead">
+                                <tr>
+                                    <th>Select</th>
+                                    <th>Course Name</th>
+                                    <th id="courseGroupCol" hidden>Group</th>
+                                    <th>Type 1</th>
+                                    <th>Type 2</th>
+                                </tr>
+                            </thead>
+                            <tbody id="courseTableBody"><tr><td colspan="4">Complete Education step to see programs</td></tr></tbody>
+                        </table>
+                    </div>
+                    <div class="reg-box">
+                        <label>Registration Number</label>
+                        <input type="text" id="txtRegNo" class="reg-value" value="{{ student.registration_no }}" readonly>
+                        <div class="app-no-line">Application No: <strong id="lblAppNo">{{ draft.application_no|default:"Not Generated" }}</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Upload -->
+            <div class="form-step" data-step="4">
+                <h2>Upload Photo & Signature</h2>
+                <div class="upload-card">
+                    <div class="upload-left">
+                        <label for="fuPhoto">Passport Photo *</label>
+                        <input type="file" id="fuPhoto" accept="image/jpeg,image/png" onchange="previewFile(event,'photo')" {% if form_disabled %}disabled{% endif %}>
+                        <small class="upload-info">Max 100KB (JPG/PNG)</small>
+                    </div>
+                    <img id="imgPhotoPreview" class="preview-img" src="{% static 'images/logo.png' %}" alt="Photo">
+                </div>
+                <div class="upload-card">
+                    <div class="upload-left">
+                        <label for="fuSign">Signature *</label>
+                        <input type="file" id="fuSign" accept="image/jpeg,image/png" onchange="previewFile(event,'sign')" {% if form_disabled %}disabled{% endif %}>
+                        <small class="upload-info">Max 50KB (JPG/PNG)</small>
+                    </div>
+                    <img id="imgSignPreview" class="preview-img sign-preview" src="{% static 'images/logo.png' %}" alt="Sign">
+                </div>
+            </div>
+
+            <!-- Step 5: Declaration -->
+            <div class="form-step" data-step="5">
+                <h2>Declaration</h2>
+                <div class="declaration-box">
+                    <input type="checkbox" id="declarationCheck" onchange="handlePreviewButtonVisibility()" {% if form_disabled %}disabled{% endif %}>
+                    <label for="declarationCheck">I certify that the information provided is true. False information may lead to cancellation of admission.</label>
+                </div>
+            </div>
+
+            {% if not form_disabled %}
+            <div class="action-section">
+                <button type="button" id="btnPrev" class="btn-action back" onclick="changeStep(-1)" style="display:none">Back</button>
+                <button type="button" id="btnNext" class="btn-action next" onclick="changeStep(1)">Next</button>
+                <button type="button" id="btnReset" class="btn-action reset" onclick="resetForm(event)">Reset Step</button>
+                <button type="button" id="btnPreview" class="btn-action preview" onclick="return validateAndPreview()" style="display:none">Preview Application</button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{{ draft_data|json_script:"draft-data" }}
+{{ bsc_subject_groups|json_script:"bsc-subject-groups-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+window.ADMISSION_CONFIG = {
+    regNo: '{{ student.registration_no|escapejs }}',
+    csrfToken: '{{ csrf_token }}',
+    formDisabled: {{ form_disabled|yesno:"true,false" }},
+    draftAppNo: '{{ draft.application_no|default:""|escapejs }}',
+    coursesUrl: '{% url "courses_api" %}',
+    saveDraftUrl: '{% url "save_draft_api" %}',
+    loadDraftUrl: '{% url "load_draft_api" %}',
+    previewUrl: '{% url "preview_application" %}',
+    bscProgramName: '{{ bsc_program_name|escapejs }}',
+    bscProgramNames: {{ bsc_program_names_json|safe }},
+    initialProgramType: '{{ initial_program_type|escapejs }}',
+    initialProgramLevel: '{{ initial_program_level|escapejs }}',
+    programsByLevel: {{ programs_by_level_json|safe }},
+    statesDataUrl: '{% static "data/india_states_districts.json" %}',
+    boardsDataUrl: '{% static "data/india_boards_universities.json" %}',
+};
+</script>
+<script src="{% static 'js/admission_form.js' %}?v=11"></script>
+{% endblock %}

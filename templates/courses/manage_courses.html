@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Courses{% endblock %}
+
+{% block content %}
+<div class="portal-page">
+    <div class="portal-main">
+        <div class="page-header">
+            <h2 class="page-title"><i class="fas fa-book"></i> Manage Courses</h2>
+            <div class="page-actions">
+                <a href="{% url 'manage_programs' %}"><i class="fas fa-layer-group"></i> Manage Programs</a>
+                <a href="{% url 'admin_dashboard' %}"><i class="fas fa-arrow-left"></i> Dashboard</a>
+            </div>
+        </div>
+
+        {% if show_bsc_groups %}
+        <div class="info-banner" style="margin-bottom: 14px; padding: 12px 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; font-size: 13px;">
+            <strong>B.Sc. Subject Groups</strong><br>
+            <span><strong>B.Sc. Bio Group</strong> — Group A: Chemistry, Botany, Zoology; Group B: Chemistry, Forestry, Zoology.</span><br>
+            <span><strong>B.Sc. Maths Group</strong> — Group A: Chemistry, Mathematics, Physics; Group B: Computer Science, Mathematics, Physics.</span><br>
+            <span class="text-muted">Students must pick one group on the admission form; all DSC subjects in that group are auto-selected as compulsory.</span>
+        </div>
+        {% endif %}
+
+        <div class="filter-bar">
+            <form method="get" class="filter-bar" style="margin-bottom: 0;">
+                <input type="text" name="search" value="{{ search }}" class="portal-input" placeholder="Search program, department, or course...">
+                <select name="program" class="portal-input">
+                    <option value="ALL">All Programs</option>
+                    {% for pt in program_types %}
+                    <option value="{{ pt }}" {% if program_filter == pt %}selected{% endif %}>{{ pt }}</option>
+                    {% endfor %}
+                </select>
+                <select name="type1" class="portal-input">
+                    <option value="ALL">All Type 1</option>
+                    {% for opt in type1_choices %}
+                    <option value="{{ opt }}" {% if type1_filter == opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                </select>
+                <select name="type2" class="portal-input">
+                    <option value="ALL">All Type 2</option>
+                    {% for opt in type2_choices %}
+                    <option value="{{ opt }}" {% if type2_filter == opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+            </form>
+            <form method="post" action="{% url 'import_ug_docx' %}" enctype="multipart/form-data" class="inline-form">
+                {% csrf_token %}
+                <input type="hidden" name="search" value="{{ search }}">
+                <input type="hidden" name="program" value="{{ program_filter }}">
+                <input type="hidden" name="type1" value="{{ type1_filter }}">
+                <input type="hidden" name="type2" value="{{ type2_filter }}">
+                <input type="file" name="docx_file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="portal-input" style="max-width: 220px;">
+                <label class="checkbox-field" style="margin: 0;">
+                    <input type="checkbox" name="replace_ug">
+                    <span>Replace UG courses</span>
+                </label>
+                <button type="submit" class="btn btn-ghost btn-sm">Import UG DOCX</button>
+            </form>
+        </div>
+
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Program</th>
+                        <th>Department — Course Name</th>
+                        {% if show_bsc_groups %}<th>Subject Group</th>{% endif %}
+                        <th>Course Type 1</th>
+                        <th>Course Type 2</th>
+                        <th>Compulsory</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in courses %}
+                    <tr>
+                        <td>{{ c.program_type }}</td>
+                        <td>
+                            {% if c.department %}
+                            <strong>{{ c.department }}</strong> — {{ c.course_name }}
+                            {% else %}
+                            {{ c.course_name }}
+                            {% endif %}
+                        </td>
+                        {% if show_bsc_groups %}
+                        <td>
+                            {% if c.subject_group_label %}
+                            <span class="badge badge-info">{{ c.subject_group_label }}</span>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                        <td>{{ c.course_type_1 }}</td>
+                        <td>{{ c.course_type_2 }}</td>
+                        <td>
+                            <form method="post" action="{% url 'toggle_compulsory' c.pk %}" class="inline-form checkbox-toggle-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="search" value="{{ search }}">
+                                <input type="hidden" name="program" value="{{ program_filter }}">
+                                <input type="hidden" name="type1" value="{{ type1_filter }}">
+                                <input type="hidden" name="type2" value="{{ type2_filter }}">
+                                <label class="checkbox-pill" title="Pre-select as compulsory for this program">
+                                    <input type="checkbox" {% if c.is_compulsory %}checked{% endif %} onchange="this.form.submit()">
+                                    <span>{% if c.is_compulsory %}Yes{% else %}No{% endif %}</span>
+                                </label>
+                            </form>
+                        </td>
+                        <td class="action-cell">
+                            <a href="{% url 'manage_courses' %}?edit={{ c.pk }}&search={{ search }}&program={{ program_filter }}&type1={{ type1_filter }}&type2={{ type2_filter }}" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <form method="post" action="{% url 'delete_course' c.pk %}" class="inline-form" onsubmit="return confirm('Delete this course?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="search" value="{{ search }}">
+                                <input type="hidden" name="program" value="{{ program_filter }}">
+                                <input type="hidden" name="type1" value="{{ type1_filter }}">
+                                <input type="hidden" name="type2" value="{{ type2_filter }}">
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr class="empty-row">
+                        <td colspan="{% if show_bsc_groups %}7{% else %}6{% endif %}">No courses found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <h3 class="section-title" id="course-form">
+            {% if edit_course %}Edit Course{% else %}Add New Course{% endif %}
+        </h3>
+        <form method="post"
+              action="{% if edit_course %}{% url 'edit_course' edit_course.pk %}{% else %}{% url 'add_course' %}{% endif %}"
+              class="form-grid form-grid--narrow">
+            {% csrf_token %}
+            <input type="hidden" name="search" value="{{ search }}">
+            <input type="hidden" name="program" value="{{ program_filter }}">
+            <input type="hidden" name="type1" value="{{ type1_filter }}">
+            <input type="hidden" name="type2" value="{{ type2_filter }}">
+            <div class="form-field">
+                <label for="program_type">Program</label>
+                <select id="program_type" name="program_type" class="portal-input" required>
+                    <option value="">-- Select Program --</option>
+                    {% for pt in program_form_choices %}
+                    <option value="{{ pt }}" {% if selected_program == pt %}selected{% endif %}>{{ pt }}</option>
+                    {% endfor %}
+                </select>
+                <small class="field-hint">Programs are managed on the <a href="{% url 'manage_programs' %}">Manage Programs</a> page.</small>
+            </div>
+            <div class="form-field">
+                <label for="department">Department</label>
+                <input type="text" id="department" name="department" class="portal-input"
+                       value="{{ edit_course.department|default:'' }}" placeholder="e.g. Hindi, Commerce">
+            </div>
+            <div class="form-field">
+                <label for="course_name">Course Name</label>
+                <input type="text" id="course_name" name="course_name" class="portal-input"
+                       value="{{ edit_course.course_name|default:'' }}" placeholder="Course name" required>
+            </div>
+            <div class="form-field">
+                <label for="course_type_1">Course Type 1 (Theory / Practical)</label>
+                <select id="course_type_1" name="course_type_1" class="portal-input" required>
+                    <option value="">-- Select Type 1 --</option>
+                    {% for opt in type1_choices %}
+                    <option value="{{ opt }}" {% if edit_course.course_type_1 == opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-field">
+                <label for="course_type_2">Course Type 2 (NEP Category)</label>
+                <select id="course_type_2" name="course_type_2" class="portal-input" required>
+                    <option value="">-- Select Type 2 --</option>
+                    {% for opt in type2_choices %}
+                    <option value="{{ opt }}" {% if edit_course.course_type_2 == opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if show_group_field and available_subject_groups %}
+            <input type="hidden" name="has_subject_group_field" value="1">
+            <div class="form-field full-width" id="subjectGroupsField">
+                <label>Subject Groups</label>
+                <div class="subject-group-checkboxes">
+                    {% for g in available_subject_groups %}
+                    <label class="checkbox-field">
+                        <input type="checkbox" name="subject_groups" value="{{ g.pk }}"
+                               {% if g.pk in selected_subject_group_ids %}checked{% endif %}>
+                        <span>
+                            <strong>{{ g.full_name }}</strong>
+                            <span class="text-muted"> — {{ g.department_label }}</span>
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <small class="field-hint">
+                    Select which B.Sc. groups include this course. DSC courses in a student's chosen group become compulsory on the admission form.
+                    Leave unchecked to match by department automatically.
+                </small>
+            </div>
+            {% endif %}
+            <div class="form-field full-width">
+                <label class="checkbox-field">
+                    <input type="checkbox" id="is_compulsory" name="is_compulsory"
+                           {% if edit_course.is_compulsory %}checked{% endif %}>
+                    <span>Pre-select as compulsory subject for this program</span>
+                </label>
+                <small class="field-hint">When enabled, this subject is auto-selected (and locked) on the student admission form.</small>
+            </div>
+            <div class="full-width action-row" style="border-top: none; padding-top: 0; margin-top: 0;">
+                <button type="submit" class="btn {% if edit_course %}btn-secondary{% else %}btn-success{% endif %}">
+                    <i class="fas {% if edit_course %}fa-save{% else %}fa-plus{% endif %}"></i>
+                    {% if edit_course %}Save Changes{% else %}Add Course{% endif %}
+                </button>
+                {% if edit_course %}
+                <a href="{% url 'manage_courses' %}?search={{ search }}&program={{ program_filter }}&type1={{ type1_filter }}&type2={{ type2_filter }}" class="btn btn-ghost">
+                    Cancel Edit
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if edit_course %}
+<script>
+document.getElementById('course-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,60 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#a32623">
+    <title>{% block title %}Chaitanya College{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/portal.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="glass-bg">
+    <header class="college-header-top">
+        <div class="header-inner">
+            <img src="{% static 'images/logo.png' %}" alt="College Logo" class="college-logo">
+            <div class="college-info">
+                <h3 class="college-title-main">Chaitanya Science and Arts College</h3>
+                <h4 class="college-tagline-ugc">(An Autonomous Institution Approved by UGC)</h4>
+                <p class="college-address">Pamgarh, Dist - Janjgir-Champa (C.G).</p>
+                <p class="affiliation-text">Affiliated to Shaheed Nandkumar Patel Vishwavidyalaya, Raigarh, Chhattisgarh</p>
+            </div>
+            <img src="{% static 'images/NAAC.png' %}" alt="NAAC" class="naac-logo">
+        </div>
+    </header>
+
+    <main class="layout-wrapper">
+        {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-social">
+                {% for link in social_media_links %}
+                <a href="{{ link.url }}" class="footer-social-link" target="_blank" rel="noopener noreferrer"
+                   aria-label="{{ link.accessible_label }}" title="{{ link.accessible_label }}">
+                    <i class="{{ link.icon_class }}" aria-hidden="true"></i>
+                </a>
+                {% empty %}
+                <span class="footer-social-placeholder">&nbsp;</span>
+                {% endfor %}
+            </div>
+            <p class="footer-copy">&copy; {% now "Y" %} Chaitanya Science and Arts College, Pamgarh. All rights reserved.</p>
+            <a href="{% url 'admin_login' %}" class="footer-admin-link">
+                <i class="fas fa-lock" aria-hidden="true"></i> Admin Login
+            </a>
+        </div>
+    </footer>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

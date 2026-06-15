@@ -1,0 +1,576 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Application {{ admission.application_no }}</title>
+    <style>
+        @page { size: A4; margin: 10mm; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 11px;
+            color: #111;
+            {% if not is_pdf %}background: #f3f4f6;{% else %}background: #fff;{% endif %}
+        }
+        .page {
+            {% if not is_pdf %}
+            width: 210mm;
+            margin: 20px auto;
+            padding: 12mm;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.15);
+            {% else %}
+            padding: 0;
+            {% endif %}
+        }
+        .watermark {
+            {% if is_pdf %}display: none;{% else %}
+            position: absolute;
+            left: 0; right: 0; top: 0; bottom: 0;
+            text-align: center;
+            opacity: 0.06;
+            {% endif %}
+        }
+        .content { position: relative; }
+        table { border-collapse: collapse; }
+        .header-table { width: 100%; border-bottom: 2px solid #000; margin-bottom: 8px; }
+        .header-table td { vertical-align: middle; padding: 4px; }
+        .logo-cell { width: 72px; text-align: center; }
+        .logo-cell img { width: 68px; height: 68px; }
+        .title-cell { text-align: center; padding: 0 8px; }
+        .title-main { font-size: 22px; color: #800000; font-weight: bold; margin: 0 0 5px 0; line-height: 1.25; }
+        .title-ugc { font-size: 12px; color: #0b3d91; font-weight: bold; margin: 0 0 3px 0; }
+        .title-address { font-size: 11px; color: #111; margin: 0 0 4px 0; }
+        .title-sub { font-size: 11px; color: #0b3d91; margin: 2px 0; }
+        .title-gold { font-size: 11px; color: #B8860B; margin: 2px 0; }
+        .form-heading { text-align: center; font-size: 14px; color: #800000; margin: 8px 0; }
+        .id-row { width: 100%; margin: 8px 0; text-align: center; }
+        .id-box {
+            border: 1px solid #a00f0f;
+            padding: 5px 12px;
+            font-size: 12px;
+            display: inline-block;
+            margin: 0 8px;
+        }
+        .section-title {
+            font-weight: bold;
+            background-color: #ffe082;
+            border-left: 5px solid #b10a0a;
+            padding: 5px 12px;
+            margin: 10px 0 6px 0;
+            font-size: 12px;
+        }
+        .pair-table { width: 100%; margin-bottom: 4px; }
+        .pair-table > tbody > tr > td { width: 50%; vertical-align: top; padding: 0 8px 0 0; }
+        .field-table { width: 100%; margin-bottom: 4px; }
+        .field-table td {
+            padding: 4px 6px;
+            font-size: 11px;
+            vertical-align: top;
+            border: 1px solid #d1d5db;
+        }
+        .label-cell { width: 130px; font-weight: bold; background-color: #f9fafb; }
+        .value-cell { background-color: #fff; }
+        .course-layout { width: 100%; margin-bottom: 6px; }
+        .course-layout td { vertical-align: top; }
+        .course-main { width: 74%; padding-right: 10px; }
+        .photo-side { width: 26%; text-align: center; }
+        .photo-box {
+            width: 100px;
+            height: 118px;
+            border: 1px solid #b10a0a;
+            margin: 0 auto 6px auto;
+            text-align: center;
+        }
+        .sign-box {
+            width: 100px;
+            height: 42px;
+            border: 1px solid #b10a0a;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .photo-box img, .sign-box img { max-width: 96px; max-height: 114px; }
+        .sign-box img { max-height: 38px; }
+        .data-table { width: 100%; margin-top: 4px; font-size: 10px; }
+        .data-table th, .data-table td { border: 1px solid #d1d5db; padding: 5px 4px; text-align: center; }
+        .data-table th { background-color: #f1f5f9; font-weight: bold; }
+        .data-table td.left { text-align: left; }
+        .subjects-label { color: #a00f0f; font-weight: bold; display: block; margin-bottom: 4px; }
+        .declaration-text { font-size: 10px; line-height: 1.5; text-align: justify; margin: 6px 0; }
+        .declaration-block {
+            margin-top: 14px;
+            clear: both;
+            width: 100%;
+        }
+        .declaration-main-title {
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            margin: 14px 0 10px 0;
+            color: #800000;
+        }
+        .declaration-section {
+            margin: 0 0 14px 0;
+            padding: 0;
+            width: 100%;
+        }
+        .declaration-heading {
+            font-weight: bold;
+            font-size: 11px;
+            margin: 0 0 8px 0;
+            padding: 4px 8px;
+            color: #800000;
+            background: #fff8e1;
+            border-left: 3px solid #b10a0a;
+        }
+        .declaration-subheading {
+            font-weight: bold;
+            font-size: 10px;
+            margin: 10px 0 6px 0;
+            color: #111;
+        }
+        .declaration-list { margin: 0 0 10px 20px; padding: 0; }
+        .declaration-list li { margin-bottom: 6px; text-align: justify; line-height: 1.5; font-size: 10px; }
+        .declaration-list ul { margin: 4px 0 6px 18px; padding: 0; }
+        .declaration-list ul li { list-style-type: circle; }
+        .signature-block { width: 100%; margin-top: 8px; }
+        .signature-block td {
+            vertical-align: bottom;
+            font-size: 10px;
+            padding: 6px;
+            border: 1px solid #d1d5db;
+        }
+        .sig-line { border-top: 1px solid #d1d5db; margin-top: 24px; padding-top: 4px; text-align: center; min-height: 28px; }
+        .sig-img-wrap { text-align: center; min-height: 28px; margin-top: 4px; }
+        .sig-img-wrap img { max-height: 34px; max-width: 110px; }
+        .committee-table { width: 100%; margin-top: 10px; font-size: 10px; }
+        .committee-table td {
+            border: 1px solid #d1d5db;
+            padding: 8px 6px;
+            vertical-align: bottom;
+            text-align: center;
+            width: 33%;
+            height: 72px;
+        }
+        .print-footer { margin-top: 14px; font-size: 10px; text-align: right; font-weight: bold; }
+        .highlight-name { font-weight: bold; color: #111; }
+        .action-buttons { text-align: center; margin-top: 24px; }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            text-decoration: none;
+            color: #111;
+            background: #fff;
+            margin: 0 8px;
+        }
+        .btn-primary { background: #007bff; color: #fff; border-color: #007bff; }
+        .btn-disabled {
+            background: #e5e7eb;
+            color: #6b7280;
+            border-color: #d1d5db;
+            cursor: not-allowed;
+            opacity: 0.85;
+        }
+        @media print {
+            body { background: #fff; }
+            .page { margin: 0; box-shadow: none; width: 100%; }
+            .declaration-block { page-break-before: auto; }
+            .declaration-section { page-break-inside: avoid; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    {% if not is_pdf %}
+    <div class="watermark"><img src="{% static 'images/logo.png' %}" alt=""></div>
+    {% endif %}
+    <div class="content">
+        <table class="header-table">
+            <tr>
+                <td class="logo-cell">
+                    <img src="{% if is_pdf %}{{ logo_url }}{% else %}{% static 'images/logo.png' %}{% endif %}" alt="Logo">
+                </td>
+                <td class="title-cell">
+                    <p class="title-main">Chaitanya Science and Arts College</p>
+                    <p class="title-ugc">(An Autonomous Institution Approved by UGC)</p>
+                    <p class="title-address">Pamgarh, Dist - Janjgir-Champa (C.G).</p>
+                    <p class="title-gold">ACCREDITED 'A' GRADE BY NAAC</p>
+                    <p class="title-sub">Affiliated to Shaheed Nandkumar Patel Vishwavidyalaya, Raigarh, Chhattisgarh</p>
+                </td>
+                <td class="logo-cell">
+                    <img src="{% if is_pdf %}{{ naac_url }}{% else %}{% static 'images/NAAC.png' %}{% endif %}" alt="NAAC">
+                </td>
+            </tr>
+        </table>
+
+        <p class="form-heading">APPLICATION FORM FOR ADMISSION IN SESSION 2026-27</p>
+
+        <div class="id-row">
+            <span class="id-box"><strong>Reg No:</strong> {{ admission.reg_no|default:"-" }}</span>
+            <span class="id-box"><strong>App No:</strong> {{ admission.application_no|default:"-" }}</span>
+        </div>
+
+        <table class="course-layout">
+            <tr>
+                <td class="course-main">
+                    <div class="section-title">Course Details</div>
+                    <table class="field-table">
+                        <tr>
+                            <td class="label-cell">Program</td>
+                            <td class="value-cell" colspan="3">{{ admission.program_type|default:"-" }}</td>
+                        </tr>
+                    </table>
+                    <span class="subjects-label">Selected Subjects</span>
+                    {% if selected_subjects %}
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Sr.</th><th>Subject</th><th>Type 1</th><th>Type 2</th></tr>
+                        </thead>
+                        <tbody>
+                        {% for s in selected_subjects %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td class="left">{{ s.name }}</td>
+                            <td>{{ s.type1|default:"-" }}</td>
+                            <td>{{ s.type2|default:"N/A" }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p>{{ admission.subject|default:"No subjects selected" }}</p>
+                    {% endif %}
+                </td>
+                <td class="photo-side">
+                    <div class="photo-box">{% if photo_src %}<img src="{{ photo_src }}" alt="Photo">{% endif %}</div>
+                    <div class="sign-box">{% if sign_src %}<img src="{{ sign_src }}" alt="Sign">{% endif %}</div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="section-title">Student Details</div>
+        <table class="pair-table">
+            <tr>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Name</td><td>{{ admission.full_name|default:"-" }}</td></tr></table>
+                </td>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Father</td><td>{{ admission.father_name|default:"-" }}</td></tr></table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Mother</td><td>{{ admission.mother_name|default:"-" }}</td></tr></table>
+                </td>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Gender</td><td>{{ admission.gender|default:"-" }}</td></tr></table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Category</td><td>{{ admission.category|default:"-" }}</td></tr></table>
+                </td>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">DOB</td><td>{{ dob_display }}</td></tr></table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Mobile</td><td>{{ admission.mobile|default:"-" }}</td></tr></table>
+                </td>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Email</td><td>{{ admission.email|default:"-" }}</td></tr></table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Aadhaar</td><td>{{ admission.aadhaar|default:"-" }}</td></tr></table>
+                </td>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">APAAR</td><td>{{ admission.apaar_id|default:"-" }}</td></tr></table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Nationality</td><td>{{ admission.nationality|default:"Indian" }}</td></tr></table>
+                </td>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Religion</td><td>{{ admission.religion|default:"-" }}</td></tr></table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Marital Status</td><td>{{ admission.marital_status|default:"-" }}</td></tr></table>
+                </td>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Blood Group</td><td>{{ admission.blood_group|default:"-" }}</td></tr></table>
+                </td>
+            </tr>
+        </table>
+
+        <div class="section-title">Disability Details</div>
+        <table class="pair-table">
+            <tr>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Disability</td><td>{% if has_disability %}Yes{% else %}No{% endif %}</td></tr></table>
+                </td>
+                <td>
+                    {% if has_disability %}
+                    <table class="field-table"><tr><td class="label-cell">Details</td><td>{{ admission.disability_details|default:"-" }}</td></tr></table>
+                    {% endif %}
+                </td>
+            </tr>
+            {% if has_disability %}
+            <tr>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Percentage</td><td>{{ admission.disability_percentage|default:"-" }}</td></tr></table>
+                </td>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Type</td><td>{{ admission.disability_type|default:"-" }}</td></tr></table>
+                </td>
+            </tr>
+            {% endif %}
+        </table>
+
+        <div class="section-title">Other Details</div>
+        <table class="pair-table">
+            <tr>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Minority</td><td>{{ is_minority }}</td></tr></table>
+                </td>
+                <td>
+                    <table class="field-table"><tr><td class="label-cell">Medium</td><td>{{ admission.medium|default:"-" }}</td></tr></table>
+                </td>
+            </tr>
+        </table>
+
+        <div class="section-title">Permanent Address</div>
+        <table class="pair-table">
+            <tr>
+                <td><table class="field-table"><tr><td class="label-cell">Village</td><td>{{ admission.perm_village|default:"-" }}</td></tr></table></td>
+                <td><table class="field-table"><tr><td class="label-cell">City</td><td>{{ admission.perm_city|default:"-" }}</td></tr></table></td>
+            </tr>
+            <tr>
+                <td><table class="field-table"><tr><td class="label-cell">District</td><td>{{ admission.perm_district|default:"-" }}</td></tr></table></td>
+                <td><table class="field-table"><tr><td class="label-cell">State</td><td>{{ admission.perm_state|default:"-" }}</td></tr></table></td>
+            </tr>
+            <tr>
+                <td colspan="2"><table class="field-table"><tr><td class="label-cell">PIN</td><td>{{ admission.perm_pin_code|default:"-" }}</td></tr></table></td>
+            </tr>
+        </table>
+
+        <div class="section-title">Correspondence Address</div>
+        <table class="pair-table">
+            <tr>
+                <td><table class="field-table"><tr><td class="label-cell">Village</td><td>{{ admission.corr_village|default:"-" }}</td></tr></table></td>
+                <td><table class="field-table"><tr><td class="label-cell">City</td><td>{{ admission.corr_city|default:"-" }}</td></tr></table></td>
+            </tr>
+            <tr>
+                <td><table class="field-table"><tr><td class="label-cell">District</td><td>{{ admission.corr_district|default:"-" }}</td></tr></table></td>
+                <td><table class="field-table"><tr><td class="label-cell">State</td><td>{{ admission.corr_state|default:"-" }}</td></tr></table></td>
+            </tr>
+            <tr>
+                <td colspan="2"><table class="field-table"><tr><td class="label-cell">PIN</td><td>{{ admission.corr_pin_code|default:"-" }}</td></tr></table></td>
+            </tr>
+        </table>
+
+        <div class="section-title">Education Details</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Class</th><th>Board / University</th><th>Stream</th><th>Duration</th><th>Year</th>
+                    <th>Total</th><th>Obtained</th><th>%</th><th>Grade</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for edu in education %}
+            <tr>
+                <td>{{ edu.className|default:"-" }}</td>
+                <td>{{ edu.board|default:"-" }}</td>
+                <td>{{ edu.stream|default:"-" }}</td>
+                <td>{{ edu.duration|default:"-" }}</td>
+                <td>{{ edu.year|default:"-" }}</td>
+                <td>{{ edu.totalMarks|default:"-" }}</td>
+                <td>{{ edu.obtained|default:"-" }}</td>
+                <td>{{ edu.percentage|default:"-" }}</td>
+                <td>{{ edu.grade|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="9">No education records</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="declaration-block">
+        <h3 class="declaration-main-title">Declaration</h3>
+
+        <div class="declaration-section">
+            <p class="declaration-heading">Declaration by Applicant</p>
+            <ul class="declaration-list">
+                <li>I, <span class="highlight-name">{{ student_name }}</span>, hereby declare that I have read and understood the conditions of eligibility for the Course/programme for which I seek admission.</li>
+                <li>To the best of my knowledge and belief, I fulfil the minimum eligibility criteria and I have provided necessary information in registration &amp;/or admission form and relevant self-attested documents with this application.</li>
+                <li>I further undertake that I have not concealed or distorted any information and in the event of any information or self-attested documents is found to be incorrect, false or misleading, my candidature shall be liable to cancellation by the College/University at any time and I shall have no claim of any nature including refund of registration fee paid by me and all the benefits availed by me shall be summarily withdrawn.</li>
+                <li>I do undertake that I have carefully studied the rules of the College/University as printed in the admission brochure/ &ldquo;Admission Rules/Guidelines of the Dept. of Higher education for session {{ current_session }}&rdquo; and I accept them in totality and shall not raise any dispute over the same.</li>
+                <li>I do understand that the Authority can amend or change any rules without advanced intimation and I will be abiding by them.</li>
+                <li>Further, I declare that I fulfil the minimum eligibility required for admission to concerned course/programme. In case any information furnished above by me is found wrong at any time, my candidature for the admission to any course/programme may be cancelled outright and I may be debarred permanently from admission and disciplinary action may be taken against me.</li>
+                <li>I also declare that I have not taken part in any activity subversive of law and have not been debarred by any University/Institution for seeking admission or appearing in the examinations.</li>
+                <li>I hereby solemnly declare an oath that the entries made by me in the above columns are true to the best of my knowledge and belief and if at any time the entries are found to be incorrect, my admission may be cancelled and disciplinary action may be initiated against me.</li>
+            </ul>
+            <p class="declaration-text">Signed this on <strong>{{ signed_date }}</strong></p>
+            <p class="declaration-text">I have Uploaded Photocopies of following Certificates/Documents along with Application form</p>
+            <table class="signature-block" width="100%">
+                <tr>
+                    <td width="50%">
+                        <div class="sig-img-wrap">{% if sign_src %}<img src="{{ sign_src }}" alt="Signature">{% endif %}</div>
+                        <div class="sig-line">Signature</div>
+                    </td>
+                    <td width="50%">
+                        <div class="sig-line">Name: <span class="highlight-name">{{ student_name }}</span></div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="declaration-section">
+            <p class="declaration-heading">Declaration by Parents/Guardian</p>
+            <p class="declaration-text">
+                I, <span class="highlight-name">{{ guardian_name }}</span>, have gone through the declaration made by my son / daughter / ward
+                and agree to abide by all those declarations. I further declare that I agree to meet all expenses in the University and / or in the
+                hostel of my son / daughter / ward during the period of his / her course of study. I shall compensate for any loss or damage caused
+                by my son / daughter / ward to the University&rsquo;s property.
+            </p>
+            <p class="declaration-text">Signed this on <strong>{{ signed_date }}</strong></p>
+            <table class="signature-block" width="100%">
+                <tr>
+                    <td width="50%"><div class="sig-line">Signature</div></td>
+                    <td width="50%"><div class="sig-line">Name: <span class="highlight-name">{{ guardian_name }}</span></div></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="declaration-section">
+            <p class="declaration-heading">UGC Draft Regulations on Curbing the Menace of Ragging in Higher Educational Institutions, 2009</p>
+            <p class="declaration-subheading">Annex-I (Part-I) &mdash; Format of Undertaking to be given by the student</p>
+            <ul class="declaration-list">
+                <li>I, <span class="highlight-name">{{ student_name }}</span> {{ student_relation }} Mr./ Mrs. <span class="highlight-name">{{ guardian_name }}</span> have carefully read and fully understood the law prohibiting ragging and the directions of the Supreme Court and the Central/State Government in this regard.</li>
+                <li>I have received a copy of the UGC Regulation on Curbing the Menace of Ragging in Higher Educational Institution, 2009.</li>
+                <li>I hereby undertake that
+                    <ul>
+                        <li>will not indulge in any behaviour or act that may come under the definition of ragging,</li>
+                        <li>I will not participate in or abet or propagate ragging in any form,</li>
+                        <li>I will not hurt anyone physically or psychologically or cause any other harm.</li>
+                    </ul>
+                </li>
+                <li>I hereby agree that if found guilty of any aspect of ragging, I may be punished as per the provisions of the of the UGC Regulations mentioned above and/ or as per the law in force.</li>
+            </ul>
+            <p class="declaration-text">Signed this on <strong>{{ signed_date }}</strong></p>
+            <table class="signature-block" width="100%">
+                <tr>
+                    <td width="50%">
+                        <div class="sig-img-wrap">{% if sign_src %}<img src="{{ sign_src }}" alt="Signature">{% endif %}</div>
+                        <div class="sig-line">Signature</div>
+                    </td>
+                    <td width="50%"><div class="sig-line">Name: <span class="highlight-name">{{ student_name }}</span></div></td>
+                </tr>
+            </table>
+
+            <p class="declaration-subheading">Annex-I (Part-II) &mdash; Format of Undertaking to be given by the Parent/Guardian</p>
+            <ul class="declaration-list">
+                <li>I, <span class="highlight-name">{{ guardian_name }}</span> {{ guardian_relation }} <span class="highlight-name">{{ student_name }}</span> have carefully read and fully understood the law prohibiting ragging and the directions of the Supreme Court and the Central/State Government in this regard as well as the UGC Regulations on Curbing the Menace of Ragging in Higher Educational Institution, 2009.</li>
+                <li>I assure you that my son/daughter/ward will not indulge in any act of ragging. Regulations mentioned above and/ or as per the law in force.</li>
+            </ul>
+            <p class="declaration-text">Signed this on <strong>{{ signed_date }}</strong></p>
+            <table class="signature-block" width="100%">
+                <tr>
+                    <td width="50%"><div class="sig-line">Signature</div></td>
+                    <td width="50%"><div class="sig-line">Name: <span class="highlight-name">{{ guardian_name }}</span></div></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="declaration-section">
+            <p class="declaration-heading">Declaration by the Admission Committee</p>
+            <p class="declaration-text">
+                Certified that the application is in order / not in order. The candidate is recommended / not recommended for admission.
+            </p>
+            <p class="declaration-text">
+                All entries made by the applicant <span class="highlight-name">{{ student_name }}</span> {{ student_relation }} Mr./ Mrs.
+                <span class="highlight-name">{{ guardian_name }}</span> in registration form/application form is verified from the original documents
+                produced by the applicant before admission committee &amp; found correct. The applicant has paid the admission/tuition fees etc. &amp;
+                receipt with seal &amp; sign is given to the applicant. All original documents of the applicant (except Transfer Certificate &amp;
+                Migration Certificate) is returned to the applicant.
+            </p>
+            <p class="declaration-text">
+                IT IS CERTIFIED THAT THE APPLICANT <span class="highlight-name">{{ student_name|upper }}</span> FULFILS ALL THE MINIMUM ELIGIBILITY
+                CRITERIA REQUIRED FOR ADMISSION IN THE CONCERNED COURSE/PROGRAMME
+                <span class="highlight-name">{{ enrolled_program|upper }}</span> AS PER SYLLABUS/ORDINANCE OF THE UNIVERSITY &amp; ADMISSION
+                RULES/GUIDELINE OF THE DEPARTMENT OF HIGHER EDUCATION, GOVT. OF CHHATTISGARH FOR SESSION {{ current_session }}.
+                Signed this on _______________________
+            </p>
+            <table class="committee-table">
+                <tr>
+                    <td>Signature &amp; Seal of<br>Member (s) of the Committee</td>
+                    <td>Signature &amp; Seal of<br>Head of the Committee</td>
+                    <td>Signature &amp; Seal of<br>Principal of College or<br>HOD/Head of SOS</td>
+                </tr>
+            </table>
+        </div>
+        </div>
+
+        <p class="print-footer">Date &amp; Time of Print: {{ print_datetime }}</p>
+
+        {% if not is_pdf %}
+        <div class="action-buttons no-print">
+            <button class="btn" onclick="window.print()">Print Application</button>
+            {% if can_download_pdf %}
+            <a class="btn btn-primary" href="{% url 'download_pdf' admission.application_no %}">Download PDF</a>
+            {% endif %}
+            {% if preview_mode and can_submit %}
+            <button class="btn btn-primary" id="btnFinalSubmit">Submit Application</button>
+            <a class="btn" href="{% url 'fill_admission_form' %}">Back to Edit</a>
+            {% elif preview_mode and can_download_pdf %}
+            {% if can_edit_application %}
+            <a class="btn" href="{% url 'fill_admission_form' %}">Edit Application</a>
+            {% else %}
+            <button type="button" class="btn btn-disabled" id="btnEditLocked"
+                data-lock-message="{{ application_lock_message|escape }}">Edit Application</button>
+            {% endif %}
+            <a class="btn" href="{% url 'student_dashboard' %}">Back to Dashboard</a>
+            {% else %}
+            <a class="btn" href="{% url 'student_dashboard' %}">Back to Dashboard</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if preview_mode %}
+<script>
+document.getElementById('btnEditLocked')?.addEventListener('click', function() {
+    const msg = this.dataset.lockMessage || 'You cannot edit this application.';
+    alert(msg);
+});
+</script>
+{% endif %}
+{% if preview_mode and can_submit %}
+<script>
+document.getElementById('btnFinalSubmit')?.addEventListener('click', function() {
+    if (!confirm('Submit application? You cannot edit after submission.')) return;
+    fetch('{% url "submit_application" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify({ application_no: '{{ admission.application_no|escapejs }}' }),
+    }).then(r => r.json()).then(res => {
+        if (res.status === 'SUCCESS') window.location.href = res.redirect || '/dashboard/';
+        else alert(res.message || 'Submit failed');
+    });
+});
+</script>
+{% endif %}
+</body>
+</html>

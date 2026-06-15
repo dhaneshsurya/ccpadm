@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Programs{% endblock %}
+
+{% block content %}
+<div class="portal-page">
+    <div class="portal-main">
+        <div class="page-header">
+            <h2 class="page-title"><i class="fas fa-layer-group"></i> Manage Programs</h2>
+            <div class="page-actions">
+                <a href="{% url 'manage_courses' %}"><i class="fas fa-book"></i> Manage Courses</a>
+                <a href="{% url 'admin_dashboard' %}"><i class="fas fa-arrow-left"></i> Dashboard</a>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <form method="get" class="filter-bar" style="margin-bottom: 0;">
+                <input type="text" name="search" value="{{ search }}" class="portal-input" placeholder="Search program name or code...">
+                <select name="level" class="portal-input">
+                    <option value="ALL">All Types (UG / PG / Diploma)</option>
+                    {% for lvl in level_choices %}
+                    <option value="{{ lvl }}" {% if level_filter == lvl %}selected{% endif %}>{{ lvl }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+            </form>
+            <form method="post" action="{% url 'sync_programs' %}" class="inline-form">
+                {% csrf_token %}
+                <input type="hidden" name="search" value="{{ search }}">
+                <input type="hidden" name="level" value="{{ level_filter }}">
+                <button type="submit" class="btn btn-ghost btn-sm">Sync from Courses</button>
+            </form>
+        </div>
+
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Program Name</th>
+                        <th>Program Type</th>
+                        <th>Code</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in programs %}
+                    <tr>
+                        <td>{{ p.program_name }}</td>
+                        <td>
+                            {% if p.program_level %}
+                            <span class="badge badge-info">{{ p.program_level }}</span>
+                            {% else %}
+                            <span class="badge badge-warning">Not Set</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ p.program_code|default:"—" }}</td>
+                        <td>
+                            {% if p.is_active %}
+                            <span class="badge badge-success">Active</span>
+                            {% else %}
+                            <span class="badge badge-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="action-cell">
+                            <a href="{% url 'manage_programs' %}?edit={{ p.pk }}&search={{ search }}&level={{ level_filter }}" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <form method="post" action="{% url 'delete_program' p.pk %}" class="inline-form" onsubmit="return confirm('Delete this program?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="search" value="{{ search }}">
+                                <input type="hidden" name="level" value="{{ level_filter }}">
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr class="empty-row">
+                        <td colspan="5">No programs found. Add one below or sync from existing courses.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <h3 class="section-title" id="program-form">
+            {% if edit_program %}Edit Program{% else %}Add New Program{% endif %}
+        </h3>
+        <form method="post"
+              action="{% if edit_program %}{% url 'edit_program' edit_program.pk %}{% else %}{% url 'add_program' %}{% endif %}"
+              class="form-grid form-grid--narrow">
+            {% csrf_token %}
+            <input type="hidden" name="search" value="{{ search }}">
+            <input type="hidden" name="level" value="{{ level_filter }}">
+            <div class="form-field full-width">
+                <label for="program_name">Program Name</label>
+                <input type="text" id="program_name" name="program_name" class="portal-input"
+                       value="{{ edit_program.program_name|default:'' }}"
+                       placeholder="e.g. B. A. - First Semester" required>
+            </div>
+            <div class="form-field">
+                <label for="program_level">Program Type</label>
+                <select id="program_level" name="program_level" class="portal-input" required>
+                    <option value="">-- Select UG / PG / Diploma --</option>
+                    {% for lvl in level_choices %}
+                    <option value="{{ lvl }}" {% if selected_level == lvl %}selected{% endif %}>{{ lvl }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-field">
+                <label for="program_code">Program Code <span class="text-muted">(optional)</span></label>
+                <input type="text" id="program_code" name="program_code" class="portal-input"
+                       value="{{ edit_program.program_code|default:'' }}" placeholder="e.g. BA-SEM1">
+            </div>
+            <div class="form-field full-width">
+                <label class="checkbox-field">
+                    <input type="checkbox" id="is_active" name="is_active"
+                           {% if not edit_program or edit_program.is_active %}checked{% endif %}>
+                    <span>Active (visible in registration &amp; admission forms)</span>
+                </label>
+            </div>
+            <div class="full-width action-row" style="border-top: none; padding-top: 0; margin-top: 0;">
+                <button type="submit" class="btn {% if edit_program %}btn-secondary{% else %}btn-success{% endif %}">
+                    <i class="fas {% if edit_program %}fa-save{% else %}fa-plus{% endif %}"></i>
+                    {% if edit_program %}Save Changes{% else %}Add Program{% endif %}
+                </button>
+                {% if edit_program %}
+                <a href="{% url 'manage_programs' %}?search={{ search }}&level={{ level_filter }}" class="btn btn-ghost">
+                    Cancel Edit
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if edit_program %}
+<script>
+document.getElementById('program-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+</script>
+{% endif %}
+{% endblock %}

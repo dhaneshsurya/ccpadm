@@ -1,0 +1,34 @@
+<nav class="portal-sidebar">
+    <div class="portal-sidebar__title">Student Menu</div>
+    <a href="{% url 'student_dashboard' %}" class="{% if sidebar_active == 'dashboard' %}active{% endif %}">
+        <i class="fas fa-home"></i><span>Dashboard</span>
+    </a>
+    {% if admission_submitted %}
+    {% if admission_editable %}
+    <a href="{% url 'fill_admission_form' %}" class="{% if sidebar_active == 'form' %}active{% endif %}">
+        <i class="fas fa-file-alt"></i><span>Edit Application</span>
+    </a>
+    {% else %}
+    <a href="#" class="disabled"><i class="fas fa-file-alt"></i><span>Fill Form (Done)</span></a>
+    {% endif %}
+    <a href="{% url 'preview_application' %}?app_no={{ sidebar_app_no }}" target="_blank" class="{% if sidebar_active == 'print' %}active{% endif %}">
+        <i class="fas fa-print"></i><span>Print Form</span>
+    </a>
+    <a href="{% url 'download_pdf_page' %}" class="{% if sidebar_active == 'pdf' %}active{% endif %}">
+        <i class="fas fa-file-pdf"></i><span>Download PDF</span>
+    </a>
+    {% else %}
+    <a href="{% url 'fill_admission_form' %}" class="{% if sidebar_active == 'form' %}active{% endif %}">
+        <i class="fas fa-file-alt"></i><span>Fill Admission Form</span>
+    </a>
+    <a href="{% url 'preview_application' %}" class="{% if sidebar_active == 'preview' %}active{% endif %}">
+        <i class="fas fa-eye"></i><span>Preview</span>
+    </a>
+    {% endif %}
+    <a href="{% url 'my_application' %}" class="{% if sidebar_active == 'applications' %}active{% endif %}">
+        <i class="fas fa-list"></i><span>My Applications</span>
+    </a>
+    <a href="{% url 'logout' %}" class="nav-logout">
+        <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+    </a>
+</nav>

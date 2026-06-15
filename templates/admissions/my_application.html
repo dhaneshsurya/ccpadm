@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}My Applications{% endblock %}
+
+{% block content %}
+<div class="portal-page">
+    <div class="portal-layout">
+        {% include 'partials/student_sidebar.html' %}
+
+        <div class="portal-main">
+            <div class="page-header">
+                <h2 class="page-title"><i class="fas fa-list"></i> My Applications</h2>
+                <div class="page-actions">
+                    <a href="{% url 'student_dashboard' %}"><i class="fas fa-arrow-left"></i> Dashboard</a>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>App No</th>
+                            <th>Name</th>
+                            <th>Program</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in admissions %}
+                        <tr>
+                            <td>{{ a.application_no|default:"—" }}</td>
+                            <td>{{ a.full_name }}</td>
+                            <td>{{ a.program_type|default:"—" }}</td>
+                            <td>
+                                {% if a.status == 'Submitted' %}
+                                <span class="badge badge-success">{{ a.status }}</span>
+                                {% elif a.status == 'Draft' %}
+                                <span class="badge badge-warning">{{ a.status }}</span>
+                                {% else %}
+                                <span class="badge badge-info">{{ a.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ a.submitted_date|date:"d M Y H:i"|default:"—" }}</td>
+                            <td>
+                                {% if a.application_no and a.status == 'Submitted' %}
+                                <a href="{% url 'preview_application' %}?app_no={{ a.application_no }}" class="btn btn-sm btn-ghost" target="_blank">Print</a>
+                                <a href="{% url 'download_pdf' a.application_no %}" class="btn btn-sm btn-primary">PDF</a>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr class="empty-row">
+                            <td colspan="6">No applications found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

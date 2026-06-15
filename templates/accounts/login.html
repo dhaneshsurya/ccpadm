@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Chaitanya College{% endblock %}
+
+{% block content %}
+<div class="portal-center">
+    <div class="glass-card glass-card--medium">
+        <h2><i class="fas fa-sign-in-alt"></i> Student Login</h2>
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-field">
+                <label for="user">Email or Mobile</label>
+                <input type="text" id="user" name="user" class="portal-input" placeholder="Enter email or mobile" required>
+            </div>
+            <div class="form-field">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" class="portal-input" placeholder="Enter password" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Login</button>
+        </form>
+        <a href="{% url 'forgot_password' %}" class="link-text">Forgot Password?</a>
+        <a href="{% url 'home' %}" class="btn btn-ghost btn-block">Back to Home</a>
+    </div>
+</div>
+{% endblock %}

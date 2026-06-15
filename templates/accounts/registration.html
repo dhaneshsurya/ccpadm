@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Registration - Chaitanya College{% endblock %}
+
+{% block content %}
+<div class="portal-center">
+    <div class="glass-card glass-card--wide">
+        <h2><i class="fas fa-user-plus"></i> Student Registration</h2>
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-grid">
+                <div class="form-field">
+                    <label>First Name *</label>
+                    <input type="text" name="first_name" required placeholder="First name">
+                </div>
+                <div class="form-field">
+                    <label>Middle Name</label>
+                    <input type="text" name="middle_name" placeholder="Middle name">
+                </div>
+                <div class="form-field">
+                    <label>Last Name</label>
+                    <input type="text" name="last_name" placeholder="Last name">
+                </div>
+                <div class="form-field">
+                    <label>Email *</label>
+                    <input type="email" name="email" required placeholder="your@email.com">
+                </div>
+                <div class="form-field">
+                    <label>Mobile *</label>
+                    <input type="tel" name="mobile" maxlength="10" required placeholder="10-digit mobile">
+                </div>
+                <div class="form-field">
+                    <label>Aadhaar *</label>
+                    <input type="text" name="aadhaar" maxlength="12" required placeholder="12-digit Aadhaar">
+                </div>
+                <div class="form-field full-width">
+                    <label>Program Type *</label>
+                    <select name="program_type" required>
+                        <option value="">-- Select Program --</option>
+                        {% for pt in program_types %}
+                        <option value="{{ pt }}">{{ pt }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-success btn-block">Register</button>
+        </form>
+        <a href="{% url 'login' %}" class="link-text">Already registered? Login here</a>
+    </div>
+</div>
+
+{% if success_data %}
+<div class="popup-overlay" id="popupBox">
+    <div class="popup-box">
+        <h3><i class="fas fa-check-circle"></i> Registration Successful!</h3>
+        <p><strong>Registration No:</strong> {{ success_data.reg_no }}</p>
+        <p><strong>Password:</strong> {{ success_data.password }}</p>
+        <p class="hint">Save these credentials. You need them to login.</p>
+        <a href="{% url 'login' %}" class="btn btn-secondary" style="margin-top:16px;">Go to Login</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

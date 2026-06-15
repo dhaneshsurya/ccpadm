@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Application {{ admission.application_no }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+        h1 { text-align: center; color: #3f0606; }
+        table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 13px; }
+        th { background: #f5f5f5; width: 30%; }
+        .header { text-align: center; margin-bottom: 20px; }
+        @media print { .no-print { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="margin-bottom:16px;">
+        <button onclick="window.print()">Print</button>
+        <button onclick="window.close()">Close</button>
+    </div>
+    <div class="header">
+        <h1>Chaitanya (Degree) Mahavidyalaya</h1>
+        <p>Pamgarh, Dist. Janjgir-Champa (C.G.)</p>
+        <h2>Admission Application Form</h2>
+        <p>Application No: <strong>{{ admission.application_no }}</strong></p>
+    </div>
+
+    <table>
+        <tr><th>Registration No</th><td>{{ admission.reg_no }}</td><th>Status</th><td>{{ admission.status }}</td></tr>
+        <tr><th>Full Name</th><td colspan="3">{{ admission.full_name }}</td></tr>
+        <tr><th>Father's Name</th><td>{{ admission.father_name }}</td><th>Mother's Name</th><td>{{ admission.mother_name }}</td></tr>
+        <tr><th>Gender</th><td>{{ admission.gender }}</td><th>Category</th><td>{{ admission.category }}</td></tr>
+        <tr><th>DOB</th><td>{{ admission.dob }}</td><th>Blood Group</th><td>{{ admission.blood_group }}</td></tr>
+        <tr><th>Mobile</th><td>{{ admission.mobile }}</td><th>Email</th><td>{{ admission.email }}</td></tr>
+        <tr><th>Aadhaar</th><td>{{ admission.aadhaar }}</td><th>APAAR ID</th><td>{{ admission.apaar_id }}</td></tr>
+        <tr><th>Program</th><td>{{ admission.program_type }}</td><th>Course</th><td>{{ admission.course_name }}</td></tr>
+        <tr><th>Subject</th><td colspan="3">{{ admission.subject }}</td></tr>
+    </table>
+
+    <h3>Permanent Address</h3>
+    <table>
+        <tr><th>State</th><td>{{ admission.perm_state }}</td><th>District</th><td>{{ admission.perm_district }}</td></tr>
+        <tr><th>City</th><td>{{ admission.perm_city }}</td><th>Village</th><td>{{ admission.perm_village }}</td></tr>
+        <tr><th>Pin Code</th><td colspan="3">{{ admission.perm_pin_code }}</td></tr>
+    </table>
+
+    <h3>Education - Class 10</h3>
+    <table>
+        <tr><th>Board</th><td>{{ admission.board10 }}</td><th>Year</th><td>{{ admission.year10 }}</td></tr>
+        <tr><th>Total Marks</th><td>{{ admission.total_marks10 }}</td><th>Obtained</th><td>{{ admission.obtained10 }}</td></tr>
+        <tr><th>Percentage</th><td>{{ admission.percentage10 }}</td><th>Grade</th><td>{{ admission.grade10 }}</td></tr>
+    </table>
+
+    <h3>Education - Class 12</h3>
+    <table>
+        <tr><th>Board</th><td>{{ admission.board12 }}</td><th>Year</th><td>{{ admission.year12 }}</td></tr>
+        <tr><th>Total Marks</th><td>{{ admission.total_marks12 }}</td><th>Obtained</th><td>{{ admission.obtained12 }}</td></tr>
+        <tr><th>Percentage</th><td>{{ admission.percentage12 }}</td><th>Grade</th><td>{{ admission.grade12 }}</td></tr>
+    </table>
+
+    <p style="margin-top:30px;text-align:right;">Submitted: {{ admission.submitted_date|date:"d M Y H:i" }}</p>
+</body>
+</html>
