@@ -1,5 +1,23 @@
 import os
 from pathlib import Path
+import copy
+from django.template import context
+
+# Python 3.14 compatibility monkeypatch for Django 4.2 template context copying
+def base_context_copy(self):
+    duplicate = context.BaseContext()
+    duplicate.__class__ = self.__class__
+    duplicate.__dict__ = copy.copy(self.__dict__)
+    duplicate.dicts = self.dicts[:]
+    return duplicate
+
+def context_copy(self):
+    duplicate = base_context_copy(self)
+    duplicate.render_context = copy.copy(self.render_context)
+    return duplicate
+
+context.BaseContext.__copy__ = base_context_copy
+context.Context.__copy__ = context_copy
 
 from dotenv import load_dotenv
 
