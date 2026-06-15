@@ -183,30 +183,57 @@
             width: 100%;
             display: flex;
             justify-content: center;
-            overflow: hidden;
+            padding: 0 0 24px;
+        }
+        .preview-scale-outer {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            overflow: visible;
+        }
+        .preview-scale-wrap {
+            transform-origin: top center;
+            flex-shrink: 0;
         }
         @media screen and (max-width: 768px) {
-            body {
+            html, body {
                 overflow-x: hidden;
+                overflow-y: auto;
                 -webkit-text-size-adjust: 100%;
             }
             .preview-viewport {
-                width: 100vw;
-                padding: 8px 0 16px;
+                width: 100%;
+                max-width: 100%;
+                padding: 12px 0 32px;
+                justify-content: center;
+                align-items: flex-start;
             }
-            .page {
-                width: 210mm;
-                margin: 0;
-                flex-shrink: 0;
-                transform-origin: top center;
+            .preview-scale-outer {
+                width: 100%;
+                justify-content: center;
             }
+            /* Keep the same A4 desktop page; only the outer wrapper is scaled on mobile */
         }
         @media print {
             body { background: #fff; }
             .preview-viewport {
                 display: block;
                 height: auto !important;
+                min-height: 0 !important;
+                padding: 0;
                 overflow: visible;
+            }
+            .preview-scale-outer {
+                height: auto !important;
+                width: 100% !important;
+                display: block;
+            }
+            .preview-scale-wrap {
+                transform: none !important;
+                zoom: 1 !important;
+                width: auto !important;
+                height: auto !important;
+                margin: 0 !important;
             }
             .page {
                 margin: 0;
@@ -221,7 +248,7 @@
     </style>
 </head>
 <body>
-{% if not is_pdf %}<div id="previewViewport" class="preview-viewport">{% endif %}
+{% if not is_pdf %}<div id="previewViewport" class="preview-viewport"><div id="previewScaleOuter" class="preview-scale-outer"><div id="previewScaleWrap" class="preview-scale-wrap">{% endif %}
 <div class="page">
     {% if not is_pdf %}
     <div class="watermark"><img src="{% static 'images/logo.png' %}" alt=""></div>
@@ -589,53 +616,113 @@
         {% endif %}
     </div>
 </div>
-{% if not is_pdf %}</div>{% endif %}
+{% if not is_pdf %}</div></div></div>{% endif %}
 
 {% if not is_pdf %}
 <script>
 (function () {
-    function fitPreviewToScreen() {
-        const viewport = document.getElementById('previewViewport');
-        const page = viewport ? viewport.querySelector('.page') : null;
-        if (!viewport || !page) return;
+    var MOBILE_QUERY = window.matchMedia('(max-width: 768px)');
+    var fitTimer = null;
 
-        const isMobile = window.matchMedia('(max-width: 768px)').matches;
-        if (!isMobile) {
-            page.style.transform = '';
-            viewport.style.height = '';
+    function resetPreviewScale() {
+        var outer = document.getElementById('previewScaleOuter');
+        var wrap = document.getElementById('previewScaleWrap');
+        if (outer) {
+            outer.style.height = '';
+            outer.style.minHeight = '';
+            outer.style.width = '';
+        }
+        if (wrap) {
+            wrap.style.transform = '';
+            wrap.style.transformOrigin = '';
+            wrap.style.width = '';
+            wrap.style.height = '';
+            wrap.style.marginBottom = '';
+            wrap.style.zoom = '';
+        }
+    }
+
+    function measurePage(page) {
+        return {
+            width: Math.max(page.offsetWidth, page.scrollWidth),
+            height: Math.max(page.offsetHeight, page.scrollHeight),
+        };
+    }
+
+    function fitPreviewToScreen() {
+        var outer = document.getElementById('previewScaleOuter');
+        var wrap = document.getElementById('previewScaleWrap');
+        var page = wrap ? wrap.querySelector('.page') : null;
+        if (!outer || !wrap || !page) return;
+
+        resetPreviewScale();
+
+        if (!MOBILE_QUERY.matches) {
             return;
         }
 
-        page.style.transform = 'none';
-        const pageWidth = page.getBoundingClientRect().width;
-        if (!pageWidth) return;
+        var metrics = measurePage(page);
+        if (!metrics.width || !metrics.height) return;
 
-        const scale = Math.min(1, window.innerWidth / pageWidth);
-        page.style.transform = 'scale(' + scale + ')';
-        page.style.transformOrigin = 'top center';
-        viewport.style.height = (page.offsetHeight * scale) + 'px';
+        var horizontalPadding = 20;
+        var scale = Math.min(1, (window.innerWidth - horizontalPadding) / metrics.width);
+        if (scale >= 0.999) {
+            return;
+        }
+
+        wrap.style.transformOrigin = 'top center';
+
+        // zoom keeps the same desktop layout and scales it proportionally (Chrome/Android, modern Safari)
+        if ('zoom' in wrap.style) {
+            wrap.style.zoom = scale;
+            return;
+        }
+
+        // transform fallback for browsers without zoom
+        wrap.style.transform = 'scale(' + scale + ')';
+        wrap.style.width = metrics.width + 'px';
+        wrap.style.height = metrics.height + 'px';
+        wrap.style.marginBottom = (metrics.height * (scale - 1)) + 'px';
+        outer.style.height = Math.ceil(metrics.height * scale) + 'px';
     }
 
-    window.addEventListener('resize', fitPreviewToScreen);
-    window.addEventListener('load', fitPreviewToScreen);
-    window.addEventListener('orientationchange', fitPreviewToScreen);
-    window.addEventListener('beforeprint', function () {
-        const viewport = document.getElementById('previewViewport');
-        const page = viewport ? viewport.querySelector('.page') : null;
-        if (page) page.style.transform = '';
-        if (viewport) viewport.style.height = '';
+    function scheduleFit() {
+        if (fitTimer) window.clearTimeout(fitTimer);
+        fitTimer = window.setTimeout(function () {
+            window.requestAnimationFrame(fitPreviewToScreen);
+        }, 50);
+    }
+
+    window.addEventListener('resize', scheduleFit);
+    window.addEventListener('load', scheduleFit);
+    window.addEventListener('orientationchange', function () {
+        window.setTimeout(scheduleFit, 200);
     });
-    window.addEventListener('afterprint', fitPreviewToScreen);
+    window.addEventListener('beforeprint', resetPreviewScale);
+    window.addEventListener('afterprint', scheduleFit);
+    if (MOBILE_QUERY.addEventListener) {
+        MOBILE_QUERY.addEventListener('change', scheduleFit);
+    } else if (MOBILE_QUERY.addListener) {
+        MOBILE_QUERY.addListener(scheduleFit);
+    }
+
     if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(fitPreviewToScreen);
+        document.fonts.ready.then(scheduleFit);
     }
     Array.from(document.images || []).forEach(function (img) {
         if (!img.complete) {
-            img.addEventListener('load', fitPreviewToScreen);
+            img.addEventListener('load', scheduleFit);
         }
     });
-    window.setTimeout(fitPreviewToScreen, 250);
-    window.setTimeout(fitPreviewToScreen, 1000);
+
+    if (window.ResizeObserver) {
+        var page = document.querySelector('#previewScaleWrap .page');
+        if (page) {
+            new ResizeObserver(scheduleFit).observe(page);
+        }
+    }
+
+    scheduleFit();
 })();
 </script>
 {% endif %}

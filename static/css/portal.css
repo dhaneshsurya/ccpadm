@@ -134,6 +134,7 @@ h3.college-title-main {
     font-size: clamp(1rem, 2.4vw, 1.75rem);
     font-weight: 800;
     color: var(--ccp-maroon);
+    text-transform: uppercase;
 }
 
 .college-info .college-tagline-ugc,
