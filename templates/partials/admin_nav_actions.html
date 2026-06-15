@@ -1,0 +1,23 @@
+<a href="{% url 'home' %}" class="page-action-btn" title="College homepage">
+    <i class="fas fa-home" aria-hidden="true"></i><span>Home</span>
+</a>
+{% if active_page != 'dashboard' %}
+<a href="{% url 'admin_dashboard' %}" class="page-action-btn">
+    <i class="fas fa-tachometer-alt" aria-hidden="true"></i><span>Dashboard</span>
+</a>
+{% endif %}
+{% if active_page != 'programs' %}
+<a href="{% url 'manage_programs' %}" class="page-action-btn">
+    <i class="fas fa-layer-group" aria-hidden="true"></i><span>Programs</span>
+</a>
+{% endif %}
+{% if active_page != 'courses' %}
+<a href="{% url 'manage_courses' %}" class="page-action-btn">
+    <i class="fas fa-book" aria-hidden="true"></i><span>Courses</span>
+</a>
+{% endif %}
+{% if active_page != 'students' %}
+<a href="{% url 'manage_students' %}" class="page-action-btn">
+    <i class="fas fa-users" aria-hidden="true"></i><span>Students</span>
+</a>
+{% endif %}

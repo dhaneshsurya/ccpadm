@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Helpdesk - Chaitanya College{% endblock %}
+
+{% block content %}
+<div class="helpdesk-page">
+    <header class="helpdesk-hero">
+        <div class="helpdesk-hero__icon">
+            <i class="fas fa-headset" aria-hidden="true"></i>
+        </div>
+        <div>
+            <h1 class="helpdesk-hero__title">Admission Helpdesk</h1>
+            <p class="helpdesk-hero__text">
+                Contact our officers for admission support or submit your issue below. We will respond as soon as possible.
+            </p>
+        </div>
+    </header>
+
+    <div class="helpdesk-grid">
+        <section class="helpdesk-panel" aria-labelledby="officers-heading">
+            <h2 id="officers-heading" class="helpdesk-panel__title">
+                <i class="fas fa-user-tie" aria-hidden="true"></i> Helpdesk Officers
+            </h2>
+            {% if officers %}
+            <div class="officer-list">
+                {% for officer in officers %}
+                <article class="officer-card">
+                    <div class="officer-card__avatar" aria-hidden="true">
+                        {{ officer.name|slice:":1" }}
+                    </div>
+                    <div class="officer-card__body">
+                        <h3 class="officer-card__name">{{ officer.name }}</h3>
+                        <p class="officer-card__designation">{{ officer.designation }}</p>
+                        {% if officer.department %}
+                        <p class="officer-card__department">{{ officer.department }}</p>
+                        {% endif %}
+                        <ul class="officer-card__contacts">
+                            <li>
+                                <a href="tel:{{ officer.phone }}">
+                                    <i class="fas fa-phone" aria-hidden="true"></i> {{ officer.phone }}
+                                </a>
+                            </li>
+                            {% if officer.email %}
+                            <li>
+                                <a href="mailto:{{ officer.email }}">
+                                    <i class="fas fa-envelope" aria-hidden="true"></i> {{ officer.email }}
+                                </a>
+                            </li>
+                            {% endif %}
+                            {% if officer.office_hours %}
+                            <li>
+                                <i class="fas fa-clock" aria-hidden="true"></i> {{ officer.office_hours }}
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="helpdesk-empty">Officer contact details will be published here soon.</p>
+            {% endif %}
+        </section>
+
+        <section class="helpdesk-panel helpdesk-panel--form" aria-labelledby="issue-heading">
+            <h2 id="issue-heading" class="helpdesk-panel__title">
+                <i class="fas fa-paper-plane" aria-hidden="true"></i> Submit an Issue
+            </h2>
+            <p class="helpdesk-panel__intro">Describe your problem and our team will get back to you.</p>
+            <form method="post" class="helpdesk-form" novalidate>
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="form-field{% if field.errors %} has-error{% endif %}">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                    <span class="field-error">{{ field.errors.0 }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-paper-plane" aria-hidden="true"></i> Submit Issue
+                </button>
+            </form>
+        </section>
+    </div>
+</div>
+{% endblock %}

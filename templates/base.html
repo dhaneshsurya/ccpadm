@@ -15,7 +15,9 @@
 <body class="glass-bg">
     <header class="college-header-top">
         <div class="header-inner">
-            <img src="{% static 'images/logo.png' %}" alt="College Logo" class="college-logo">
+            <a href="{% url 'home' %}" class="college-logo-link" aria-label="Chaitanya Science and Arts College — Home">
+                <img src="{% static 'images/logo.png' %}" alt="College Logo" class="college-logo">
+            </a>
             <div class="college-info">
                 <h3 class="college-title-main">Chaitanya Science and Arts College</h3>
                 <h4 class="college-tagline-ugc">(An Autonomous Institution Approved by UGC)</h4>
@@ -25,6 +27,63 @@
             <img src="{% static 'images/NAAC.png' %}" alt="NAAC" class="naac-logo">
         </div>
     </header>
+
+    <nav class="site-navbar" aria-label="Main navigation">
+        <div class="site-navbar__inner">
+            <ul class="site-navbar__links">
+                <li>
+                    <a href="{% url 'home' %}" class="site-navbar__link{% if request.resolver_match.url_name == 'home' %} is-active{% endif %}">
+                        <i class="fas fa-home" aria-hidden="true"></i> Home
+                    </a>
+                </li>
+                {% if is_student_logged_in or is_admin_logged_in %}
+                <li>
+                    {% if is_admin_logged_in %}
+                    <a href="{% url 'admin_dashboard' %}" class="site-navbar__link{% if request.resolver_match.url_name == 'admin_dashboard' %} is-active{% endif %}">
+                        <i class="fas fa-tachometer-alt" aria-hidden="true"></i> Dashboard
+                    </a>
+                    {% else %}
+                    <a href="{% url 'student_dashboard' %}" class="site-navbar__link{% if request.resolver_match.url_name == 'student_dashboard' %} is-active{% endif %}">
+                        <i class="fas fa-tachometer-alt" aria-hidden="true"></i> Dashboard
+                    </a>
+                    {% endif %}
+                </li>
+                <li>
+                    <a href="{% url 'helpdesk' %}" class="site-navbar__link{% if request.resolver_match.url_name == 'helpdesk' %} is-active{% endif %}">
+                        <i class="fas fa-headset" aria-hidden="true"></i> Helpdesk
+                    </a>
+                </li>
+                <li>
+                    {% if is_admin_logged_in %}
+                    <a href="{% url 'admin_logout' %}" class="site-navbar__link site-navbar__link--logout">
+                        <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Logout
+                    </a>
+                    {% else %}
+                    <a href="{% url 'logout' %}" class="site-navbar__link site-navbar__link--logout">
+                        <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Logout
+                    </a>
+                    {% endif %}
+                </li>
+                {% else %}
+                <li>
+                    <a href="{% url 'login' %}" class="site-navbar__link{% if request.resolver_match.url_name == 'login' %} is-active{% endif %}">
+                        <i class="fas fa-sign-in-alt" aria-hidden="true"></i> Login
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'register' %}" class="site-navbar__link{% if request.resolver_match.url_name == 'register' %} is-active{% endif %}">
+                        <i class="fas fa-user-plus" aria-hidden="true"></i> Registration
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'helpdesk' %}" class="site-navbar__link{% if request.resolver_match.url_name == 'helpdesk' %} is-active{% endif %}">
+                        <i class="fas fa-headset" aria-hidden="true"></i> Helpdesk
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
 
     <main class="layout-wrapper">
         {% if messages %}
@@ -50,9 +109,6 @@
                 {% endfor %}
             </div>
             <p class="footer-copy">&copy; {% now "Y" %} Chaitanya Science and Arts College, Pamgarh. All rights reserved.</p>
-            <a href="{% url 'admin_login' %}" class="footer-admin-link">
-                <i class="fas fa-lock" aria-hidden="true"></i> Admin Login
-            </a>
         </div>
     </footer>
     {% block extra_js %}{% endblock %}

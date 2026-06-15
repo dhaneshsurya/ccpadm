@@ -58,67 +58,384 @@ body.glass-bg::after {
     backdrop-filter: blur(20px);
     border-bottom: 1px solid rgba(163, 38, 35, 0.15);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-    padding: 12px 24px;
+    padding: 8px 12px;
 }
 
 .header-inner {
-    max-width: 1280px;
+    max-width: 1180px;
     margin: 0 auto;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-md);
+    gap: 16px;
+}
+
+.college-logo-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    line-height: 0;
+    border-radius: var(--radius-sm);
+    transition: opacity var(--transition), transform var(--transition);
+}
+
+.college-logo-link:hover {
+    opacity: 0.85;
+    transform: scale(1.03);
+}
+
+.college-logo-link:focus-visible {
+    outline: 2px solid var(--ccp-maroon);
+    outline-offset: 3px;
+}
+
+.college-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    text-align: center;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+    background: transparent;
 }
 
 .college-logo,
 .naac-logo {
-    height: 64px;
     width: auto;
     object-fit: contain;
     flex-shrink: 0;
 }
 
-.college-info {
-    flex: 1;
-    text-align: center;
-    background: transparent;
-    padding: 0;
+.college-logo {
+    height: 56px;
 }
 
-.college-info .college-title-main,
-.college-info h3.college-title-main {
-    font-size: clamp(1.15rem, 2.8vw, 1.75rem);
+.naac-logo {
+    height: 50px;
+}
+
+.college-title-main,
+h3.college-title-main,
+.college-info .college-tagline-ugc,
+.college-info h4.college-tagline-ugc,
+.college-info .college-address,
+.college-info .affiliation-text {
+    margin: 0;
+    line-height: 1.3;
+}
+
+.college-title-main,
+h3.college-title-main {
+    font-size: clamp(1rem, 2.4vw, 1.75rem);
     font-weight: 800;
     color: var(--ccp-maroon);
-    margin-bottom: 4px;
-    line-height: 1.25;
 }
 
 .college-info .college-tagline-ugc,
 .college-info h4.college-tagline-ugc {
-    font-size: clamp(0.8rem, 1.9vw, 1rem);
+    font-size: clamp(0.72rem, 1.6vw, 0.95rem);
     font-weight: 700;
     color: var(--ccp-maroon);
-    margin: 0 0 3px;
 }
 
 .college-info .college-address {
-    font-size: clamp(0.75rem, 1.6vw, 0.88rem);
+    font-size: clamp(0.72rem, 1.4vw, 0.86rem);
     font-weight: 500;
     color: #374151;
-    margin: 0 0 2px;
 }
 
 .college-info h4 {
-    font-size: clamp(0.75rem, 1.8vw, 0.92rem);
+    font-size: clamp(0.72rem, 1.6vw, 0.92rem);
     font-weight: 600;
     color: var(--ccp-gold);
 }
 
 .affiliation-text {
-    font-size: 0.78rem;
+    font-size: clamp(0.68rem, 1.3vw, 0.8rem);
     color: var(--ccp-blue);
-    margin-top: 2px;
+}
+
+/* ---- Site navbar ---- */
+.site-navbar {
+    background: rgba(255, 255, 255, 0.97);
+    border-bottom: 1px solid rgba(163, 38, 35, 0.12);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.site-navbar__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 var(--space-md);
+}
+
+.site-navbar__links {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    list-style: none;
+    margin: 0;
+    padding: 8px 0;
+}
+
+.site-navbar__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border-radius: var(--radius-pill);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background var(--transition), color var(--transition);
+}
+
+.site-navbar__link:hover {
+    background: rgba(163, 38, 35, 0.08);
+    color: var(--ccp-maroon);
+}
+
+.site-navbar__link.is-active {
+    background: var(--ccp-maroon);
+    color: #fff;
+}
+
+.site-navbar__link--logout:hover {
+    background: rgba(220, 38, 38, 0.1);
+    color: #b91c1c;
+}
+
+/* ---- Helpdesk page ---- */
+.helpdesk-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.helpdesk-hero {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+    padding: var(--space-lg);
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--card-shadow);
+    color: var(--text-primary);
+}
+
+.helpdesk-hero__icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: var(--ccp-maroon);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.helpdesk-hero__title {
+    margin: 0 0 6px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.helpdesk-hero__text {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.55;
+}
+
+.helpdesk-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    align-items: start;
+}
+
+.helpdesk-panel {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--card-shadow);
+    padding: var(--space-lg);
+    color: var(--text-primary);
+}
+
+.helpdesk-panel__title {
+    margin: 0 0 var(--space-md);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.helpdesk-panel__title i {
+    color: var(--ccp-maroon);
+    margin-right: 8px;
+}
+
+.helpdesk-panel__intro {
+    margin: -8px 0 var(--space-md);
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+
+.helpdesk-empty {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.officer-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.officer-card {
+    display: flex;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    border: 1px solid #e2e8f0;
+    transition: box-shadow var(--transition);
+}
+
+.officer-card:hover {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.officer-card__avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--ccp-maroon);
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+
+.officer-card__name {
+    margin: 0 0 3px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ccp-maroon-dark);
+}
+
+.officer-card__designation {
+    margin: 0 0 2px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.officer-card__department {
+    margin: 0 0 8px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.officer-card__contacts {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 0.84rem;
+}
+
+.officer-card__contacts a {
+    color: var(--ccp-blue);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.officer-card__contacts a:hover {
+    text-decoration: underline;
+}
+
+.officer-card__contacts li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+}
+
+.officer-card__contacts i {
+    width: 14px;
+    color: var(--ccp-maroon);
+    text-align: center;
+}
+
+.helpdesk-form .form-field {
+    margin-bottom: var(--space-sm);
+}
+
+.helpdesk-form .field-error {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: #b91c1c;
+}
+
+.helpdesk-form .has-error .portal-input {
+    border-color: #fca5a5;
+}
+
+@media (min-width: 769px) {
+    .header-inner {
+        gap: 24px;
+    }
+
+    .college-info {
+        gap: 6px;
+    }
+
+    .college-logo {
+        height: 72px;
+    }
+
+    .naac-logo {
+        height: 62px;
+    }
+
+    .college-title-main,
+    h3.college-title-main {
+        font-size: 1.65rem;
+    }
+
+    .college-info .college-tagline-ugc,
+    .college-info h4.college-tagline-ugc {
+        font-size: 0.92rem;
+    }
+
+    .college-info .college-address {
+        font-size: 0.84rem;
+    }
+
+    .affiliation-text {
+        font-size: 0.78rem;
+    }
 }
 
 /* ---- Alerts ---- */
@@ -166,7 +483,7 @@ body.glass-bg::after {
     max-width: 1280px;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: auto 1fr;
     align-items: center;
     gap: var(--space-md);
 }
@@ -204,28 +521,6 @@ body.glass-bg::after {
     text-align: center;
     font-size: 0.82rem;
     color: rgba(255, 255, 255, 0.78);
-}
-
-.footer-admin-link {
-    justify-self: end;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.9);
-    text-decoration: none;
-    padding: 8px 14px;
-    border-radius: var(--radius-md);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    background: rgba(255, 255, 255, 0.08);
-    transition: background 0.2s ease, border-color 0.2s ease;
-}
-
-.footer-admin-link:hover {
-    background: rgba(163, 38, 35, 0.35);
-    border-color: rgba(255, 255, 255, 0.4);
-    color: #fff;
 }
 
 .footer-social-placeholder {
@@ -413,6 +708,10 @@ body.glass-bg::after {
     align-items: center;
 }
 
+.page-actions--toolbar {
+    gap: 8px;
+}
+
 .page-actions a {
     color: var(--ccp-blue);
     text-decoration: none;
@@ -425,6 +724,70 @@ body.glass-bg::after {
 
 .page-actions a:hover {
     background: #eff6ff;
+}
+
+.page-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: var(--text-primary);
+    font-size: 0.84rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background var(--transition), border-color var(--transition), color var(--transition), box-shadow var(--transition);
+    white-space: nowrap;
+}
+
+.page-action-btn:hover {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: var(--ccp-blue);
+    box-shadow: 0 2px 8px rgba(11, 61, 145, 0.08);
+}
+
+.page-action-btn--accent {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #166534;
+}
+
+.page-action-btn--accent:hover {
+    background: #166534;
+    border-color: #166534;
+    color: #fff;
+}
+
+.page-action-btn--danger {
+    background: #fff5f5;
+    border-color: #fecaca;
+    color: var(--ccp-maroon);
+}
+
+.page-action-btn--danger:hover {
+    background: var(--ccp-maroon);
+    border-color: var(--ccp-maroon);
+    color: #fff;
+}
+
+.page-actions__divider {
+    width: 1px;
+    height: 28px;
+    background: #e2e8f0;
+    margin: 0 2px;
+    flex-shrink: 0;
+}
+
+.page-header--admin {
+    align-items: flex-start;
+}
+
+.page-header--admin .page-title {
+    flex: 1;
+    min-width: 200px;
 }
 
 .page-actions a.link-danger {
@@ -605,6 +968,329 @@ body.glass-bg::after {
 
 .link-text:hover {
     text-decoration: underline;
+}
+
+/* ---- Home page — 3 column layout ---- */
+.home-page {
+    width: 100%;
+    padding: var(--space-lg) var(--space-md) var(--space-xl);
+}
+
+.home-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px) minmax(0, 1fr);
+    gap: var(--space-md);
+    align-items: start;
+    max-width: 1280px;
+    margin: 0 auto;
+    min-height: calc(100vh - 240px);
+}
+
+.home-column {
+    min-width: 0;
+}
+
+.home-column--instructions {
+    text-align: left;
+}
+
+.home-column--portal {
+    display: flex;
+    justify-content: center;
+}
+
+.home-portal-card {
+    width: 100%;
+}
+
+.home-panel {
+    background: var(--card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--card-shadow);
+    padding: var(--space-md);
+    color: var(--text-primary);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.home-panel--notices {
+    padding-bottom: var(--space-sm);
+}
+
+.home-panel__header {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+
+.home-panel__header--compact {
+    align-items: center;
+}
+
+.home-panel__header-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.home-panel__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.home-panel__icon--instructions {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #92400e;
+}
+
+.home-panel__icon--notices {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: var(--ccp-maroon);
+}
+
+.home-panel__title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+
+.home-panel__subtitle {
+    margin: 3px 0 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.instruction-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    flex: 1;
+    overflow-y: auto;
+    max-height: 520px;
+    padding-right: 4px;
+}
+
+.instruction-item {
+    display: flex;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+    border: 1px solid #fde68a;
+    transition: box-shadow var(--transition), transform var(--transition);
+}
+
+.instruction-item:hover {
+    box-shadow: 0 8px 20px rgba(180, 83, 9, 0.1);
+    transform: translateY(-1px);
+}
+
+.instruction-item__badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--ccp-maroon);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.instruction-item__body {
+    flex: 1;
+    min-width: 0;
+}
+
+.instruction-item__title {
+    margin: 0 0 6px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ccp-maroon-dark);
+    line-height: 1.35;
+}
+
+.instruction-item__description {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+}
+
+.instruction-item__file {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: var(--ccp-blue);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background var(--transition), color var(--transition);
+}
+
+.instruction-item__file:hover {
+    background: var(--ccp-blue);
+    color: #fff;
+}
+
+.home-notices__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--ccp-maroon);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.home-notices__live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ccp-maroon);
+    animation: noticePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes noticePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.notice-scroll {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: linear-gradient(180deg, #fff8f8 0%, #ffffff 100%);
+    border: 1px solid rgba(163, 38, 35, 0.12);
+    min-height: 200px;
+    max-height: 520px;
+}
+
+.notice-scroll:not(.notice-scroll--animated) {
+    max-height: none;
+    overflow: visible;
+    min-height: 0;
+}
+
+.notice-scroll:not(.notice-scroll--animated)::before,
+.notice-scroll:not(.notice-scroll--animated)::after {
+    display: none;
+}
+
+.notice-scroll--animated {
+    height: 280px;
+    max-height: 280px;
+    mask-image: linear-gradient(180deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+}
+
+.notice-scroll::before,
+.notice-scroll::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 24px;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.notice-scroll::before {
+    top: 0;
+    background: linear-gradient(180deg, #fff8f8, transparent);
+}
+
+.notice-scroll::after {
+    bottom: 0;
+    background: linear-gradient(0deg, #ffffff, transparent);
+}
+
+.notice-scroll__track {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-sm);
+}
+
+.notice-scroll--animated .notice-scroll__track {
+    animation: noticeScrollVertical 28s ease-in-out infinite alternate;
+}
+
+.notice-scroll--animated:hover .notice-scroll__track {
+    animation-play-state: paused;
+}
+
+@keyframes noticeScrollVertical {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(calc(-100% + 280px)); }
+}
+
+.notice-card {
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    background: #fff;
+    border: 1px solid rgba(163, 38, 35, 0.12);
+    box-shadow: 0 4px 14px rgba(163, 38, 35, 0.06);
+    flex-shrink: 0;
+}
+
+.notice-card__title {
+    margin: 0 0 6px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--ccp-maroon-dark);
+    line-height: 1.35;
+}
+
+.notice-card__text {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.notice-card__file {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 8px;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: var(--ccp-blue);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background var(--transition), color var(--transition);
+}
+
+.notice-card__file:hover {
+    background: var(--ccp-blue);
+    color: #fff;
 }
 
 /* ---- Home hero ---- */
@@ -1021,19 +1707,42 @@ body.glass-bg::after {
 
 /* ---- Responsive header ---- */
 @media (max-width: 768px) {
+    .college-header-top {
+        padding: 6px 8px;
+    }
+
     .header-inner {
-        flex-wrap: wrap;
-        justify-content: center;
-        text-align: center;
+        gap: 8px;
     }
 
     .college-info {
-        order: 3;
-        width: 100%;
+        gap: 4px;
     }
 
-    .college-logo, .naac-logo {
-        height: 52px;
+    .college-logo,
+    .naac-logo {
+        height: 44px;
+    }
+
+    .college-title-main,
+    h3.college-title-main {
+        font-size: 0.95rem;
+    }
+
+    .college-info .college-tagline-ugc,
+    .college-info h4.college-tagline-ugc {
+        font-size: 0.68rem;
+    }
+
+    .college-info .college-address {
+        font-size: 0.66rem;
+    }
+
+    .affiliation-text {
+        font-size: 0.68rem;
+        line-height: 1.4;
+        word-break: break-word;
+        hyphens: auto;
     }
 
     .footer-inner {
@@ -1046,8 +1755,49 @@ body.glass-bg::after {
         justify-content: center;
     }
 
-    .footer-admin-link {
-        justify-self: center;
+    .site-navbar__inner {
+        padding: 0 var(--space-sm);
+    }
+
+    .site-navbar__links {
+        justify-content: flex-start;
+        gap: 2px;
+        padding: 6px 0;
+    }
+
+    .site-navbar__link {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+
+    .helpdesk-hero {
+        flex-direction: column;
+        padding: var(--space-md);
+    }
+
+    .helpdesk-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .helpdesk-panel {
+        padding: var(--space-md);
+    }
+
+    .page-header--admin {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .page-actions--toolbar {
+        width: 100%;
+    }
+
+    .page-action-btn span {
+        display: none;
+    }
+
+    .page-action-btn {
+        padding: 8px 11px;
     }
 
     .portal-sidebar {
@@ -1060,5 +1810,74 @@ body.glass-bg::after {
 
     .glass-card {
         padding: var(--space-md);
+    }
+
+    .home-page {
+        padding: var(--space-md) var(--space-sm);
+    }
+
+    .home-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-md);
+        min-height: 0;
+    }
+
+    .home-column--portal {
+        order: 1;
+    }
+
+    .home-column--instructions {
+        order: 2;
+    }
+
+    .home-column--notices {
+        order: 3;
+    }
+
+    .instruction-list,
+    .notice-scroll {
+        max-height: 360px;
+    }
+
+    .home-panel {
+        padding: var(--space-md);
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+    .home-grid {
+        grid-template-columns: 1fr 340px;
+        grid-template-areas:
+            "portal portal"
+            "instructions notices";
+    }
+
+    .home-column--portal {
+        grid-area: portal;
+        justify-content: center;
+    }
+
+    .home-column--instructions {
+        grid-area: instructions;
+    }
+
+    .home-column--notices {
+        grid-area: notices;
+    }
+}
+
+@media (max-width: 480px) {
+    .college-header-top {
+        padding: 8px 10px;
+    }
+
+    .college-logo,
+    .naac-logo {
+        height: 42px;
+    }
+
+    .college-title-main,
+    h3.college-title-main {
+        font-size: 0.92rem;
     }
 }

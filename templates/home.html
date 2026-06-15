@@ -3,20 +3,85 @@
 {% block title %}Home - Chaitanya College{% endblock %}
 
 {% block content %}
-<div class="portal-center">
-    <div class="glass-card glass-card--narrow">
-        <div class="home-hero">
-            <h2><i class="fas fa-graduation-cap"></i> Admission Portal</h2>
-            <p>Session 2026-27 — Register, apply, and track your admission online.</p>
-        </div>
-        <div class="home-actions">
-            <a href="{% url 'register' %}" class="btn btn-success btn-block">
-                <i class="fas fa-user-plus"></i> New Registration
-            </a>
-            <a href="{% url 'login' %}" class="btn btn-secondary btn-block">
-                <i class="fas fa-sign-in-alt"></i> Student Login
-            </a>
-        </div>
+<div class="home-page">
+    <div class="home-grid">
+        <aside class="home-column home-column--instructions" aria-label="Important instructions">
+            {% if important_instructions %}
+            <section class="home-panel" aria-labelledby="instructions-heading">
+                <header class="home-panel__header">
+                    <div class="home-panel__icon home-panel__icon--instructions">
+                        <i class="fas fa-circle-info" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h2 id="instructions-heading" class="home-panel__title">Important Instructions</h2>
+                        <p class="home-panel__subtitle">Read before you apply.</p>
+                    </div>
+                </header>
+                <div class="instruction-list">
+                    {% for item in important_instructions %}
+                    <article class="instruction-item">
+                        <div class="instruction-item__badge">{{ forloop.counter }}</div>
+                        <div class="instruction-item__body">
+                            <h3 class="instruction-item__title">{{ item.title }}</h3>
+                            <div class="instruction-item__description">{{ item.description|linebreaksbr }}</div>
+                            {% if item.attached_file %}
+                            <a href="{{ item.attached_file.url }}" class="instruction-item__file" target="_blank" rel="noopener noreferrer">
+                                <i class="fas fa-paperclip" aria-hidden="true"></i>
+                                <span>Download</span>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+        </aside>
+
+        <main class="home-column home-column--portal">
+            <div class="glass-card glass-card--narrow home-portal-card">
+                <div class="home-hero">
+                    <h2><i class="fas fa-graduation-cap"></i> Admission Portal</h2>
+                    <p>Session 2026-27 — Register, apply, and track your admission online.</p>
+                </div>
+                <div class="home-actions">
+                    <a href="{% url 'register' %}" class="btn btn-success btn-block">
+                        <i class="fas fa-user-plus"></i> New Registration
+                    </a>
+                    <a href="{% url 'login' %}" class="btn btn-secondary btn-block">
+                        <i class="fas fa-sign-in-alt"></i> Student Login
+                    </a>
+                </div>
+            </div>
+        </main>
+
+        <aside class="home-column home-column--notices" aria-label="College notices">
+            {% if notices %}
+            <section class="home-panel home-panel--notices" aria-labelledby="notices-heading">
+                <header class="home-panel__header home-panel__header--compact">
+                    <div class="home-panel__icon home-panel__icon--notices">
+                        <i class="fas fa-bullhorn" aria-hidden="true"></i>
+                    </div>
+                    <h2 id="notices-heading" class="home-panel__title">Notices</h2>
+                </header>
+                <div class="notice-scroll{% if notices|length > 1 %} notice-scroll--animated{% endif %}" role="region" aria-live="polite">
+                    <div class="notice-scroll__track">
+                        {% for notice in notices %}
+                        <article class="notice-card">
+                            <h3 class="notice-card__title">{{ notice.title }}</h3>
+                            <p class="notice-card__text">{{ notice.description }}</p>
+                            {% if notice.attached_file %}
+                            <a href="{{ notice.attached_file.url }}" class="notice-card__file" target="_blank" rel="noopener noreferrer">
+                                <i class="fas fa-download" aria-hidden="true"></i> Attachment
+                            </a>
+                            {% endif %}
+                        </article>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+        </aside>
     </div>
 </div>
 {% endblock %}

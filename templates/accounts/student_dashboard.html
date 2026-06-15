@@ -74,9 +74,6 @@
                 <a href="{% url 'preview_application' %}?app_no={{ admission.application_no }}" class="btn btn-primary" target="_blank">
                     <i class="fas fa-print"></i> Print Application
                 </a>
-                <a href="{% url 'download_pdf' admission.application_no %}" class="btn btn-secondary" target="_blank">
-                    <i class="fas fa-file-pdf"></i> Download PDF
-                </a>
                 {% else %}
                 <a href="{% url 'fill_admission_form' %}" class="btn btn-primary">
                     <i class="fas fa-edit"></i> Fill Admission Form

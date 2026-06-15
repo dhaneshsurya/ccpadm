@@ -3,6 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Application {{ admission.application_no }}</title>
     <style>
         @page { size: A4; margin: 10mm; }
@@ -175,9 +176,44 @@
             cursor: not-allowed;
             opacity: 0.85;
         }
+        .table-scroll-wrap {
+            width: 100%;
+        }
+        .preview-viewport {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            overflow: hidden;
+        }
+        @media screen and (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+                -webkit-text-size-adjust: 100%;
+            }
+            .preview-viewport {
+                width: 100vw;
+                padding: 8px 0 16px;
+            }
+            .page {
+                width: 210mm;
+                margin: 0;
+                flex-shrink: 0;
+                transform-origin: top center;
+            }
+        }
         @media print {
             body { background: #fff; }
-            .page { margin: 0; box-shadow: none; width: 100%; }
+            .preview-viewport {
+                display: block;
+                height: auto !important;
+                overflow: visible;
+            }
+            .page {
+                margin: 0;
+                box-shadow: none;
+                width: 100%;
+                transform: none !important;
+            }
             .declaration-block { page-break-before: auto; }
             .declaration-section { page-break-inside: avoid; }
             .no-print { display: none !important; }
@@ -185,6 +221,7 @@
     </style>
 </head>
 <body>
+{% if not is_pdf %}<div id="previewViewport" class="preview-viewport">{% endif %}
 <div class="page">
     {% if not is_pdf %}
     <div class="watermark"><img src="{% static 'images/logo.png' %}" alt=""></div>
@@ -227,21 +264,23 @@
                     </table>
                     <span class="subjects-label">Selected Subjects</span>
                     {% if selected_subjects %}
-                    <table class="data-table">
-                        <thead>
-                            <tr><th>Sr.</th><th>Subject</th><th>Type 1</th><th>Type 2</th></tr>
-                        </thead>
-                        <tbody>
-                        {% for s in selected_subjects %}
-                        <tr>
-                            <td>{{ forloop.counter }}</td>
-                            <td class="left">{{ s.name }}</td>
-                            <td>{{ s.type1|default:"-" }}</td>
-                            <td>{{ s.type2|default:"N/A" }}</td>
-                        </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="table-scroll-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>Sr.</th><th>Subject</th><th>Type 1</th><th>Type 2</th></tr>
+                            </thead>
+                            <tbody>
+                            {% for s in selected_subjects %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td class="left">{{ s.name }}</td>
+                                <td>{{ s.type1|default:"-" }}</td>
+                                <td>{{ s.type2|default:"N/A" }}</td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                     {% else %}
                     <p>{{ admission.subject|default:"No subjects selected" }}</p>
                     {% endif %}
@@ -380,31 +419,33 @@
         </table>
 
         <div class="section-title">Education Details</div>
-        <table class="data-table">
-            <thead>
+        <div class="table-scroll-wrap">
+            <table class="data-table data-table--education">
+                <thead>
+                    <tr>
+                        <th>Class</th><th>Board / University</th><th>Stream</th><th>Duration</th><th>Year</th>
+                        <th>Total</th><th>Obtained</th><th>%</th><th>Grade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for edu in education %}
                 <tr>
-                    <th>Class</th><th>Board / University</th><th>Stream</th><th>Duration</th><th>Year</th>
-                    <th>Total</th><th>Obtained</th><th>%</th><th>Grade</th>
+                    <td>{{ edu.className|default:"-" }}</td>
+                    <td>{{ edu.board|default:"-" }}</td>
+                    <td>{{ edu.stream|default:"-" }}</td>
+                    <td>{{ edu.duration|default:"-" }}</td>
+                    <td>{{ edu.year|default:"-" }}</td>
+                    <td>{{ edu.totalMarks|default:"-" }}</td>
+                    <td>{{ edu.obtained|default:"-" }}</td>
+                    <td>{{ edu.percentage|default:"-" }}</td>
+                    <td>{{ edu.grade|default:"-" }}</td>
                 </tr>
-            </thead>
-            <tbody>
-            {% for edu in education %}
-            <tr>
-                <td>{{ edu.className|default:"-" }}</td>
-                <td>{{ edu.board|default:"-" }}</td>
-                <td>{{ edu.stream|default:"-" }}</td>
-                <td>{{ edu.duration|default:"-" }}</td>
-                <td>{{ edu.year|default:"-" }}</td>
-                <td>{{ edu.totalMarks|default:"-" }}</td>
-                <td>{{ edu.obtained|default:"-" }}</td>
-                <td>{{ edu.percentage|default:"-" }}</td>
-                <td>{{ edu.grade|default:"-" }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="9">No education records</td></tr>
-            {% endfor %}
-            </tbody>
-        </table>
+                {% empty %}
+                <tr><td colspan="9">No education records</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
         <div class="declaration-block">
         <h3 class="declaration-main-title">Declaration</h3>
@@ -548,6 +589,56 @@
         {% endif %}
     </div>
 </div>
+{% if not is_pdf %}</div>{% endif %}
+
+{% if not is_pdf %}
+<script>
+(function () {
+    function fitPreviewToScreen() {
+        const viewport = document.getElementById('previewViewport');
+        const page = viewport ? viewport.querySelector('.page') : null;
+        if (!viewport || !page) return;
+
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        if (!isMobile) {
+            page.style.transform = '';
+            viewport.style.height = '';
+            return;
+        }
+
+        page.style.transform = 'none';
+        const pageWidth = page.getBoundingClientRect().width;
+        if (!pageWidth) return;
+
+        const scale = Math.min(1, window.innerWidth / pageWidth);
+        page.style.transform = 'scale(' + scale + ')';
+        page.style.transformOrigin = 'top center';
+        viewport.style.height = (page.offsetHeight * scale) + 'px';
+    }
+
+    window.addEventListener('resize', fitPreviewToScreen);
+    window.addEventListener('load', fitPreviewToScreen);
+    window.addEventListener('orientationchange', fitPreviewToScreen);
+    window.addEventListener('beforeprint', function () {
+        const viewport = document.getElementById('previewViewport');
+        const page = viewport ? viewport.querySelector('.page') : null;
+        if (page) page.style.transform = '';
+        if (viewport) viewport.style.height = '';
+    });
+    window.addEventListener('afterprint', fitPreviewToScreen);
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(fitPreviewToScreen);
+    }
+    Array.from(document.images || []).forEach(function (img) {
+        if (!img.complete) {
+            img.addEventListener('load', fitPreviewToScreen);
+        }
+    });
+    window.setTimeout(fitPreviewToScreen, 250);
+    window.setTimeout(fitPreviewToScreen, 1000);
+})();
+</script>
+{% endif %}
 
 {% if preview_mode %}
 <script>

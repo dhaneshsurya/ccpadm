@@ -1,3 +1,4 @@
+import json
 import re
 from datetime import timedelta
 
@@ -7,9 +8,11 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from courses.utils import get_program_names
+from courses.constants import PROGRAM_LEVEL_CHOICES
+from courses.utils import get_programs_by_level
 
-from .models import PasswordResetOTP, Student
+from .forms import HelpdeskIssueForm
+from .models import HelpdeskOfficer, HelpdeskIssue, ImportantInstruction, Notice, PasswordResetOTP, Student
 from .utils import (
     admin_login_required,
     generate_otp,
@@ -26,10 +29,52 @@ from .utils import (
 )
 
 
+def _home_page_context():
+    now = timezone.now()
+    return {
+        'important_instructions': ImportantInstruction.objects.filter(is_active=True).order_by(
+            'sort_order', '-created_at'
+        ),
+        'notices': Notice.objects.filter(
+            is_active=True,
+        ).filter(
+            Q(expires_at__isnull=True) | Q(expires_at__gt=now),
+        ).order_by('sort_order', '-created_at'),
+    }
+
+
 def home(request):
+    return render(request, 'home.html', _home_page_context())
+
+
+@require_http_methods(['GET', 'POST'])
+def helpdesk(request):
+    officers = HelpdeskOfficer.objects.filter(is_active=True).order_by('sort_order', 'name')
+    initial = {}
     if request.session.get('is_logged_in'):
-        return redirect('student_dashboard')
-    return render(request, 'home.html')
+        initial = {
+            'name': request.session.get('student_name', ''),
+            'email': request.session.get('student_email', ''),
+            'mobile': request.session.get('student_mobile', ''),
+            'registration_no': request.session.get('reg_no', ''),
+        }
+
+    if request.method == 'POST':
+        form = HelpdeskIssueForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                'Your issue has been submitted successfully. Our helpdesk team will contact you soon.',
+            )
+            return redirect('helpdesk')
+    else:
+        form = HelpdeskIssueForm(initial=initial)
+
+    return render(request, 'accounts/helpdesk.html', {
+        'officers': officers,
+        'form': form,
+    })
 
 
 @require_http_methods(['GET', 'POST'])
@@ -62,11 +107,28 @@ def logout_view(request):
     return redirect('home')
 
 
+REGISTRATION_PROGRAM_LEVEL_LABELS = {
+    'UG': 'Under Graduate',
+    'PG': 'Post Graduate',
+    'Diploma': 'Diploma',
+}
+
+
 @require_http_methods(['GET', 'POST'])
 def registration_view(request):
-    program_types = get_program_names()
+    programs_by_level = get_programs_by_level()
+    program_level_choices = [
+        {
+            'value': level,
+            'label': REGISTRATION_PROGRAM_LEVEL_LABELS.get(level, level),
+        }
+        for level in PROGRAM_LEVEL_CHOICES
+    ]
 
     success_data = None
+    selected_program_level = ''
+    selected_program_name = ''
+
     if request.GET.get('success') and request.session.get('registration_no'):
         success_data = {
             'reg_no': request.session.pop('registration_no', ''),
@@ -81,11 +143,19 @@ def registration_view(request):
         email = request.POST.get('email', '').strip().lower()
         mobile = re.sub(r'\D', '', request.POST.get('mobile', '').strip())
         aadhaar = re.sub(r'\D', '', request.POST.get('aadhaar', '').strip())
-        program_type = request.POST.get('program_type', '')
+        selected_program_level = request.POST.get('program_level', '').strip()
+        selected_program_name = request.POST.get('program_name', '').strip()
+        program_type = selected_program_name
 
         errors = []
-        if not program_type:
+        if not selected_program_level:
             errors.append('Please select Program Type.')
+        elif selected_program_level not in PROGRAM_LEVEL_CHOICES:
+            errors.append('Invalid Program Type selected.')
+        if not selected_program_name:
+            errors.append('Please select Program Name.')
+        elif selected_program_name not in programs_by_level.get(selected_program_level, []):
+            errors.append('Selected Program Name does not match the chosen Program Type.')
         if not full_name:
             errors.append('Name is required.')
         if not is_valid_email(email):
@@ -123,7 +193,10 @@ def registration_view(request):
                 return redirect('/register/?success=1')
 
     return render(request, 'accounts/registration.html', {
-        'program_types': program_types,
+        'program_level_choices': program_level_choices,
+        'programs_by_level_json': json.dumps(programs_by_level),
+        'selected_program_level': selected_program_level,
+        'selected_program_name': selected_program_name,
         'success_data': success_data,
     })
 

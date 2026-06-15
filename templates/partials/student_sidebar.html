@@ -14,9 +14,6 @@
     <a href="{% url 'preview_application' %}?app_no={{ sidebar_app_no }}" target="_blank" class="{% if sidebar_active == 'print' %}active{% endif %}">
         <i class="fas fa-print"></i><span>Print Form</span>
     </a>
-    <a href="{% url 'download_pdf_page' %}" class="{% if sidebar_active == 'pdf' %}active{% endif %}">
-        <i class="fas fa-file-pdf"></i><span>Download PDF</span>
-    </a>
     {% else %}
     <a href="{% url 'fill_admission_form' %}" class="{% if sidebar_active == 'form' %}active{% endif %}">
         <i class="fas fa-file-alt"></i><span>Fill Admission Form</span>

@@ -5,14 +5,15 @@
 {% block content %}
 <div class="portal-page">
     <div class="portal-main">
-        <div class="page-header">
+        <div class="page-header page-header--admin">
             <h2 class="page-title"><i class="fas fa-users"></i> Registered Students</h2>
-            <div class="page-actions">
-                <a href="{% url 'export_students_csv' %}?search={{ search }}&program={{ program_filter }}&verified={{ verified_filter }}">
-                    <i class="fas fa-file-csv"></i> Export CSV
+            <nav class="page-actions page-actions--toolbar" aria-label="Admin navigation">
+                {% include 'partials/admin_nav_actions.html' with active_page='students' %}
+                <a href="{% url 'export_students_csv' %}?search={{ search }}&program={{ program_filter }}&verified={{ verified_filter }}" class="page-action-btn page-action-btn--accent">
+                    <i class="fas fa-file-csv" aria-hidden="true"></i><span>Export CSV</span>
                 </a>
-                <a href="{% url 'admin_dashboard' %}"><i class="fas fa-arrow-left"></i> Dashboard</a>
-            </div>
+                {% include 'partials/admin_nav_logout.html' %}
+            </nav>
         </div>
 
         <form method="get" class="filter-bar">

@@ -15,6 +15,7 @@
     };
     let bscSubjectGroups = [];
     let selectedBscGroup = '';
+    let previewUnlocked = false;
     const bscProgramName = cfg.bscProgramName || 'B.Sc.';
     const bscProgramNames = new Set([
         bscProgramName,
@@ -299,12 +300,164 @@
         if (!signBase64 && signImg?.src?.startsWith('data:image')) signBase64 = signImg.src;
     }
 
-    function updatePreviewButtonVisibility() {
+    function getPreviewUnlockedKey() {
+        return 'admission_preview_unlocked_' + (cfg.regNo || 'guest');
+    }
+
+    function loadPreviewUnlocked() {
+        try {
+            previewUnlocked = localStorage.getItem(getPreviewUnlockedKey()) === '1';
+        } catch (e) {
+            previewUnlocked = false;
+        }
+    }
+
+    function setPreviewUnlocked(unlocked) {
+        previewUnlocked = !!unlocked;
+        try {
+            localStorage.setItem(getPreviewUnlockedKey(), previewUnlocked ? '1' : '0');
+        } catch (e) {
+            console.error('Failed to persist preview unlock state', e);
+        }
+    }
+
+    function summaryText(value, fallback = '—') {
+        const text = (value == null ? '' : String(value)).trim();
+        return text || fallback;
+    }
+
+    function programLevelLabel(level) {
+        const map = {
+            UG: 'First Under Graduate',
+            PG: 'Post Graduate',
+            Diploma: 'Diploma',
+        };
+        return map[level] || level || '—';
+    }
+
+    function formatAddress(state, district, city, village, pin) {
+        const parts = [city, village, district, state, pin].map(p => (p || '').trim()).filter(Boolean);
+        return parts.length ? parts.join(', ') : '—';
+    }
+
+    function renderDeclarationSummary() {
+        const panel = document.getElementById('declarationSummary');
+        if (!panel) return;
+        syncUploadBase64();
+        const data = collectFormData();
+        const education = data.Education || [];
+        const subjects = (data.SelectedSubjects || []).map(s => s.name).filter(Boolean);
+        const bscGroup = data.BScSubjectGroup ? getBscGroupFullName(data.BScSubjectGroup) : '';
+
+        const basicFields = [
+            ['Full Name', data.FullName],
+            ['Father\'s Name', data.FatherName],
+            ['Mother\'s Name', data.MotherName],
+            ['Gender', data.Gender],
+            ['Category', data.Category],
+            ['Date of Birth', data.DOB],
+            ['Mobile', data.Mobile],
+            ['Email', data.Email],
+            ['Aadhaar', data.Aadhaar],
+            ['Religion', data.Religion],
+            ['Blood Group', data.BloodGroup],
+            ['Medium', data.Medium],
+        ];
+
+        const addressFields = [
+            ['Permanent Address', formatAddress(data.PermState, data.PermDistrict, data.PermCity, data.PermVillage, data.PermPinCode)],
+            ['Correspondence Address', formatAddress(data.CorrState, data.CorrDistrict, data.CorrCity, data.CorrVillage, data.CorrPinCode)],
+        ];
+
+        const courseFields = [
+            ['Program Type', programLevelLabel(data.ProgramLevel)],
+            ['Program Name', data.ProgramType],
+            ['B.Sc. Group', bscGroup],
+            ['Application No.', summaryText(data.ApplicationNo, 'Not Generated')],
+        ].filter(([, value]) => value && value !== '—');
+
+        const uploads = [
+            ['Passport Photo', data.PhotoBase64 ? 'Uploaded' : 'Not uploaded'],
+            ['Signature', data.SignatureBase64 ? 'Uploaded' : 'Not uploaded'],
+        ];
+
+        const renderGrid = items => items.map(([label, value]) => `
+            <div class="declaration-summary__item">
+                <span class="declaration-summary__label">${label}</span>
+                <span class="declaration-summary__value">${summaryText(value)}</span>
+            </div>
+        `).join('');
+
+        const educationHtml = education.length
+            ? `<ul class="declaration-summary__list">${education.map(edu => {
+                const cls = summaryText(edu.ClassName || edu.className);
+                const board = summaryText(edu.Board || edu.board);
+                const stream = summaryText(edu.Stream || edu.stream, '');
+                const year = summaryText(edu.Year || edu.year);
+                const pct = summaryText(edu.Percentage || edu.percentage, '');
+                const streamPart = stream ? ` · ${stream}` : '';
+                const pctPart = pct ? ` · ${pct}%` : '';
+                return `<li><strong>${cls}</strong> — ${board}${streamPart} · Year ${year}${pctPart}</li>`;
+            }).join('')}</ul>`
+            : '<p class="declaration-summary__value">No education details entered.</p>';
+
+        const subjectsHtml = subjects.length
+            ? `<ul class="declaration-summary__list">${subjects.map(name => `<li>${name}</li>`).join('')}</ul>`
+            : '<p class="declaration-summary__value">No courses selected.</p>';
+
+        const uploadsHtml = uploads.map(([label, status]) => {
+            const ok = status === 'Uploaded';
+            return `<div class="declaration-summary__item">
+                <span class="declaration-summary__label">${label}</span>
+                <span class="declaration-summary__value declaration-summary__status--${ok ? 'ok' : 'missing'}">${status}</span>
+            </div>`;
+        }).join('');
+
+        panel.innerHTML = `
+            <div class="declaration-summary__header">
+                <h3 class="declaration-summary__title">Application Summary</h3>
+                <span class="declaration-summary__app-no">App No: ${summaryText(data.ApplicationNo, 'Not Generated')}</span>
+            </div>
+            <div class="declaration-summary__section">
+                <h4>Basic Details</h4>
+                <div class="declaration-summary__grid">${renderGrid(basicFields)}</div>
+            </div>
+            <div class="declaration-summary__section">
+                <h4>Address</h4>
+                <div class="declaration-summary__grid">${renderGrid(addressFields)}</div>
+            </div>
+            <div class="declaration-summary__section">
+                <h4>Education</h4>
+                ${educationHtml}
+            </div>
+            <div class="declaration-summary__section">
+                <h4>Course Selection</h4>
+                <div class="declaration-summary__grid">${renderGrid(courseFields)}</div>
+                ${subjectsHtml}
+            </div>
+            <div class="declaration-summary__section">
+                <h4>Photo &amp; Signature</h4>
+                <div class="declaration-summary__grid">${uploadsHtml}</div>
+            </div>
+        `;
+    }
+
+    function updateDeclarationActionsVisibility() {
+        const submitBtn = document.getElementById('btnSubmit');
         const previewBtn = document.getElementById('btnPreview');
         const chk = document.getElementById('declarationCheck');
-        if (!previewBtn) return;
         const onLastStep = current === getSteps().length - 1;
-        previewBtn.style.display = (onLastStep && chk?.checked) ? 'inline-flex' : 'none';
+        const declared = !!(chk && chk.checked);
+        if (submitBtn) {
+            submitBtn.style.display = (onLastStep && declared && !previewUnlocked) ? 'inline-flex' : 'none';
+        }
+        if (previewBtn) {
+            previewBtn.style.display = (onLastStep && declared && previewUnlocked) ? 'inline-flex' : 'none';
+        }
+    }
+
+    function updatePreviewButtonVisibility() {
+        updateDeclarationActionsVisibility();
     }
 
     function getSteps() {
@@ -330,10 +483,13 @@
         const previewBtn = document.getElementById('btnPreview');
         if (prevBtn) prevBtn.style.display = i === 0 ? 'none' : 'inline-flex';
         if (nextBtn) nextBtn.style.display = i === steps.length - 1 ? 'none' : 'inline-flex';
-        updatePreviewButtonVisibility();
+        updateDeclarationActionsVisibility();
         document.getElementById('hdnActiveStep').value = i;
         if (i === 3) {
             refreshProgramOptionsFromEducation();
+        }
+        if (i === 5) {
+            renderDeclarationSummary();
         }
     }
 
@@ -730,6 +886,22 @@
         }, 600);
     }
 
+    function updateUploadPreview(type) {
+        const isPhoto = type === 'photo';
+        const wrap = document.getElementById(isPhoto ? 'photoPreviewWrap' : 'signPreviewWrap');
+        const img = document.getElementById(isPhoto ? 'imgPhotoPreview' : 'imgSignPreview');
+        const panel = document.getElementById(isPhoto ? 'photoUploadPanel' : 'signUploadPanel');
+        const base64 = isPhoto ? photoBase64 : signBase64;
+        const hasImage = !!(base64 && base64.startsWith('data:image'))
+            || !!(img?.src && img.src.startsWith('data:image'));
+        if (wrap) wrap.classList.toggle('has-image', hasImage);
+        if (img) {
+            img.hidden = !hasImage;
+            if (hasImage && base64) img.src = base64;
+        }
+        if (panel) panel.classList.toggle('is-complete', hasImage);
+    }
+
     window.previewFile = function (e, type) {
         const file = e.target.files[0];
         if (!file) return;
@@ -744,6 +916,7 @@
             const img = document.getElementById(imgId);
             if (img) img.src = base64;
             if (type === 'photo') photoBase64 = base64; else signBase64 = base64;
+            updateUploadPreview(type);
             unifiedAutoSave();
         };
         reader.readAsDataURL(file);
@@ -758,7 +931,10 @@
             const streamEl = row.querySelector('.stream');
             if (streamEl) streamEl.required = true;
         }
-        if (btnId) document.getElementById(btnId).style.display = 'none';
+        if (btnId) {
+            const btn = document.getElementById(btnId);
+            if (btn) btn.style.display = 'none';
+        }
         if (!isRestoringData) {
             refreshProgramOptionsFromEducation();
             unifiedAutoSave();
@@ -783,7 +959,10 @@
                 }
             });
         }
-        if (btnId) document.getElementById(btnId).style.display = 'inline-block';
+        if (btnId) {
+            const btn = document.getElementById(btnId);
+            if (btn) btn.style.display = 'inline-block';
+        }
         refreshProgramOptionsFromEducation();
         unifiedAutoSave();
     };
@@ -840,18 +1019,92 @@
         }
     }
 
+    const CORR_ADDRESS_IDS = ['txtCorState', 'txtCorDistrict', 'txtCorCity', 'txtCorVillage', 'txtCorPin'];
+    const PERM_ADDRESS_IDS = ['txtPerState', 'txtPerDistrict', 'txtPerCity', 'txtPerVillage', 'txtPerPin'];
+
+    function isSameAddressChecked() {
+        const chk = document.getElementById('chkSameAddress');
+        return !!(chk && chk.checked);
+    }
+
+    function setCorrespondenceFieldsLocked(locked) {
+        CORR_ADDRESS_IDS.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el || cfg.formDisabled) return;
+            if (locked) {
+                el.disabled = true;
+                return;
+            }
+            if (id === 'txtCorDistrict') {
+                el.disabled = !val('txtCorState');
+            } else {
+                el.disabled = false;
+            }
+        });
+    }
+
+    function syncCorrespondenceFromPermanent() {
+        if (!isSameAddressChecked()) return;
+        setCorrespondenceFieldsLocked(false);
+        const perState = document.getElementById('txtPerState')?.value || '';
+        const perDistrict = document.getElementById('txtPerDistrict')?.value || '';
+        setStateAndDistrict('txtCorState', 'txtCorDistrict', perState, perDistrict);
+        [['txtPerCity', 'txtCorCity'], ['txtPerVillage', 'txtCorVillage'], ['txtPerPin', 'txtCorPin']].forEach(([src, dest]) => {
+            const s = document.getElementById(src);
+            const d = document.getElementById(dest);
+            if (s && d) d.value = s.value;
+        });
+        setCorrespondenceFieldsLocked(true);
+    }
+
+    function clearCorrespondenceAddress() {
+        setStateAndDistrict('txtCorState', 'txtCorDistrict', '', '');
+        ['txtCorCity', 'txtCorVillage', 'txtCorPin'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+    }
+
     function onStateChange(stateId) {
         const districtId = stateId === 'txtPerState' ? 'txtPerDistrict' : 'txtCorDistrict';
         fillDistrictDropdown(districtId, val(stateId), '');
+        if (stateId === 'txtPerState') {
+            syncCorrespondenceFromPermanent();
+        }
         if (!isRestoringData) unifiedAutoSave();
     }
 
     function setStateAndDistrict(stateId, districtId, stateVal, districtVal) {
         const stateEl = document.getElementById(stateId);
-        if (!stateEl || !stateVal) return;
+        if (!stateEl) return;
+        if (!stateVal) {
+            stateEl.value = '';
+            fillDistrictDropdown(districtId, '', '');
+            return;
+        }
         ensureSelectOption(stateEl, stateVal);
         stateEl.value = stateVal;
         fillDistrictDropdown(districtId, stateVal, districtVal || '');
+    }
+
+    function bindSameAddressListeners() {
+        if (cfg.formDisabled) return;
+        PERM_ADDRESS_IDS.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const handler = () => {
+                if (isSameAddressChecked()) syncCorrespondenceFromPermanent();
+            };
+            el.addEventListener('change', handler);
+            if (el.tagName === 'INPUT') {
+                el.addEventListener('input', handler);
+            }
+        });
+        const chk = document.getElementById('chkSameAddress');
+        if (chk && chk.dataset.sameAddressBound !== '1') {
+            chk.dataset.sameAddressBound = '1';
+            chk.addEventListener('change', copyAddress);
+        }
     }
 
     function fillBoardSelect(selectEl, options, placeholder, selectedValue = '') {
@@ -977,25 +1230,16 @@
         });
     }
 
-    window.copyAddress = function () {
-        if (isRestoringData) return;
-        const checked = document.getElementById('chkSameAddress').checked;
-        if (checked) {
-            setStateAndDistrict('txtCorState', 'txtCorDistrict', val('txtPerState'), val('txtPerDistrict'));
-            [['txtPerCity', 'txtCorCity'], ['txtPerVillage', 'txtCorVillage'], ['txtPerPin', 'txtCorPin']].forEach(([src, dest]) => {
-                const s = document.getElementById(src);
-                const d = document.getElementById(dest);
-                if (s && d) d.value = s.value;
-            });
+    function copyAddress() {
+        if (isSameAddressChecked()) {
+            syncCorrespondenceFromPermanent();
         } else {
-            setStateAndDistrict('txtCorState', 'txtCorDistrict', '', '');
-            ['txtCorCity', 'txtCorVillage', 'txtCorPin'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.value = '';
-            });
+            setCorrespondenceFieldsLocked(false);
+            clearCorrespondenceAddress();
         }
-        unifiedAutoSave();
-    };
+        if (!isRestoringData) unifiedAutoSave();
+    }
+    window.copyAddress = copyAddress;
 
     window.toggleDisabilityFields = function () {
         const ddl = document.getElementById('ddlDisabilityCertificate');
@@ -1003,25 +1247,16 @@
         if (ddl && section) section.style.display = ddl.value === 'Yes' ? 'block' : 'none';
     };
 
+    window.handleDeclarationActions = function () {
+        updateDeclarationActionsVisibility();
+        if (!isRestoringData) unifiedAutoSave();
+    };
+
     window.handlePreviewButtonVisibility = function () {
-        updatePreviewButtonVisibility();
+        updateDeclarationActionsVisibility();
     };
 
-    window.resetForm = function (e) {
-        if (e) e.preventDefault();
-        if (!confirm('Reset current step entries?')) return false;
-        const step = getSteps()[current];
-        step.querySelectorAll('input, select, textarea').forEach(c => {
-            if (c.readOnly || c.disabled || c.id === 'txtRegNo') return;
-            if (c.type === 'checkbox') c.checked = false;
-            else if (c.tagName === 'SELECT') c.selectedIndex = 0;
-            else c.value = '';
-        });
-        unifiedAutoSave();
-        return false;
-    };
-
-    window.validateAndPreview = function () {
+    function validateFullApplication() {
         if (cfg.formDisabled) return false;
         syncUploadBase64();
         const required = [
@@ -1043,6 +1278,7 @@
                 alert('Please fill: ' + (f.labels?.[0]?.textContent || id));
                 return false;
             }
+            if (f) f.classList.remove('required-error');
         }
         const elig = getEducationEligibility();
         if (!elig.stream12) {
@@ -1071,8 +1307,88 @@
             showStep(3);
             return false;
         }
-        if (!photoBase64 || !signBase64) { alert('Upload photo and signature.'); showStep(4); return false; }
-        if (!document.getElementById('declarationCheck')?.checked) { alert('Accept declaration.'); showStep(5); return false; }
+        if (!photoBase64 || !signBase64) {
+            alert('Upload photo and signature.');
+            showStep(4);
+            return false;
+        }
+        if (!document.getElementById('declarationCheck')?.checked) {
+            alert('Accept declaration.');
+            showStep(5);
+            return false;
+        }
+        return true;
+    }
+
+    window.submitApplicationStep = function () {
+        if (!validateFullApplication()) return false;
+        const btn = document.getElementById('btnSubmit');
+        const prevLabel = btn ? btn.textContent : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+        }
+        saveDraftNow()
+            .then(() => {
+                setPreviewUnlocked(true);
+                renderDeclarationSummary();
+                updateDeclarationActionsVisibility();
+                alert('Application saved successfully. Click Preview Application to review before final submission.');
+            })
+            .catch(err => {
+                alert(err.message || 'Could not save application. Please try again.');
+            })
+            .finally(() => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = prevLabel || 'Submit';
+                }
+            });
+        return false;
+    };
+
+    window.resetForm = function (e) {
+        if (e) e.preventDefault();
+        if (!confirm('Reset current step entries?')) return false;
+        const step = getSteps()[current];
+        const unlockCorrForReset = step.contains(document.getElementById('chkSameAddress'));
+        if (unlockCorrForReset) {
+            setCorrespondenceFieldsLocked(false);
+        }
+        step.querySelectorAll('input, select, textarea').forEach(c => {
+            if (c.readOnly || c.disabled || c.id === 'txtRegNo') return;
+            if (c.type === 'checkbox') c.checked = false;
+            else if (c.tagName === 'SELECT') c.selectedIndex = 0;
+            else c.value = '';
+        });
+        if (unlockCorrForReset) {
+            fillDistrictDropdown('txtPerDistrict', '', '');
+            fillDistrictDropdown('txtCorDistrict', '', '');
+        }
+        if (step.getAttribute('data-step') === '4') {
+            photoBase64 = '';
+            signBase64 = '';
+            ['imgPhotoPreview', 'imgSignPreview'].forEach(id => {
+                const img = document.getElementById(id);
+                if (img) {
+                    img.removeAttribute('src');
+                    img.hidden = true;
+                }
+            });
+            updateUploadPreview('photo');
+            updateUploadPreview('sign');
+        }
+        unifiedAutoSave();
+        return false;
+    };
+
+    window.validateAndPreview = function () {
+        if (!previewUnlocked) {
+            alert('Please click Submit first to unlock application preview.');
+            showStep(5);
+            return false;
+        }
+        if (!validateFullApplication()) return false;
 
         const btn = document.getElementById('btnPreview');
         const prevLabel = btn ? btn.textContent : '';
@@ -1470,6 +1786,7 @@
         const draftEducation = pickBestEducation(data);
         if (!Object.keys(data).length && !educationHasContent(draftEducation)) return;
         isRestoringData = true;
+        try {
         const map = {
             txtName: data.FullName, txtFather: data.FatherName, txtMother: data.MotherName,
             ddlGender: data.Gender, ddlCategory: data.Category, txtNationality: data.Nationality,
@@ -1501,7 +1818,7 @@
         const disabilityDdl = document.getElementById('ddlDisabilityCertificate');
         if (disabilityDdl) {
             disabilityDdl.value = data.HasDisability === 1 ? 'Yes' : (data.HasDisability === 0 ? 'No' : disabilityDdl.value);
-            toggleDisabilityFields();
+            window.toggleDisabilityFields();
         }
 
         if (data.PermState) {
@@ -1518,17 +1835,22 @@
             && (data.PermVillage || '') === (data.CorrVillage || '')
             && (data.PermPinCode || '') === (data.CorrPinCode || '');
         const chkSame = document.getElementById('chkSameAddress');
-        if (chkSame && sameAddr) chkSame.checked = true;
+        if (chkSame && sameAddr) {
+            chkSame.checked = true;
+            setCorrespondenceFieldsLocked(true);
+        }
 
         if (data.PhotoBase64) {
             photoBase64 = data.PhotoBase64;
             const p = document.getElementById('imgPhotoPreview');
             if (p) p.src = photoBase64;
+            updateUploadPreview('photo');
         }
         if (data.SignatureBase64) {
             signBase64 = data.SignatureBase64;
             const s = document.getElementById('imgSignPreview');
             if (s) s.src = signBase64;
+            updateUploadPreview('sign');
         }
         if (data.ApplicationNo) applySavedAppNo(data.ApplicationNo);
 
@@ -1573,9 +1895,10 @@
         }
 
         const declaration = document.getElementById('declarationCheck');
-        if (declaration && data.DeclarationAccepted) declaration.checked = true;
-
-        isRestoringData = false;
+        if (declaration && data.DeclarationAccepted) {
+            declaration.checked = true;
+            updateDeclarationActionsVisibility();
+        }
 
         if (educationHasContent(educationSnapshot)) {
             restoreEducationFromDraft({ Education: educationSnapshot });
@@ -1588,7 +1911,7 @@
             : persisted.Education;
         persistDraftLocally({ ...persisted, ...data, Education: savedEducation });
         updateTabStatus();
-        handlePreviewButtonVisibility();
+        window.handlePreviewButtonVisibility();
 
         if (data._educationMergedFromLocal && !cfg.formDisabled) {
             saveDraftNow({ education: savedEducation, activeStep: data.ActiveStep }).catch(err => {
@@ -1608,6 +1931,13 @@
                 restoreEducationFromDraft({ Education: educationSnapshot });
                 refreshProgramOptionsFromEducation();
             }
+            if (activeStep === 5) {
+                renderDeclarationSummary();
+                updateDeclarationActionsVisibility();
+            }
+        }
+        } finally {
+            isRestoringData = false;
         }
     }
 
@@ -1720,6 +2050,7 @@
         }
 
         bindEducationPersistence();
+        bindSameAddressListeners();
 
         if (!cfg.formDisabled) {
             document.addEventListener('input', e => {
@@ -1735,10 +2066,11 @@
             const chk = document.getElementById('declarationCheck');
             if (chk) {
                 chk.addEventListener('change', () => {
-                    handlePreviewButtonVisibility();
-                    unifiedAutoSave();
+                    window.handleDeclarationActions();
                 });
             }
+            loadPreviewUnlocked();
+            updateDeclarationActionsVisibility();
             window.addEventListener('beforeunload', snapshotDraftToLocal);
             window.addEventListener('pagehide', snapshotDraftToLocal);
         }

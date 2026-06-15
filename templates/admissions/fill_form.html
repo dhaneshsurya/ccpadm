@@ -130,7 +130,7 @@
                     <div class="form-group"><label>Village *</label><input type="text" id="txtPerVillage" required {% if form_disabled %}disabled{% endif %}></div>
                     <div class="form-group"><label>PIN *</label><input type="text" id="txtPerPin" maxlength="6" required {% if form_disabled %}disabled{% endif %}></div>
                 </div></div>
-                <label class="same-address-label"><input type="checkbox" id="chkSameAddress" onchange="copyAddress()"> Same as Permanent Address</label>
+                <label class="same-address-label"><input type="checkbox" id="chkSameAddress"> Same as Permanent Address</label>
                 <h4>Correspondence Address</h4>
                 <div class="address-block"><div class="grid">
                     <div class="form-group"><label for="txtCorState">State *</label>
@@ -154,56 +154,141 @@
                 <h2>Education Details</h2>
                 <p class="form-hint">10th and 12th are compulsory. B.Sc. is shown only for 12th Science stream. Add Graduation with stream for Post Graduate and P.G.D.C.A. programs.</p>
                 <div class="edu-table">
-                    <div class="edu-head"><div>Class</div><div>Board / University</div><div>Stream</div><div>Duration</div><div>Year</div><div>Total</div><div>Obtained</div><div>%</div><div>Grade</div><div></div></div>
                     <div id="row10th" class="edu-row edu-data-row">
-                        <input class="class-name" id="txtClass10" value="10th" placeholder="10th">
-                        <select class="board" id="txtBoard10" required {% if form_disabled %}disabled{% endif %}>
-                            <option value="">Select Board</option>
-                        </select>
-                        <div class="edu-stream-na">—</div>
-                        <input class="duration" id="txtDuration10" placeholder="1">
-                        <input class="year" id="txtYear10" placeholder="2024" required>
-                        <input class="total-marks" id="txtTotalMarks10" onkeyup="calculateRowPercentage(this)" required>
-                        <input class="obtainedmarks" id="txtMarksObtained10" onkeyup="calculateRowPercentage(this)" required>
-                        <input class="percentage" id="txtPercentage10" readonly>
-                        <input class="grade" id="txtGrade10" placeholder="Div">
-                        <div></div>
+                        <div class="edu-field">
+                            <label for="txtClass10">Class</label>
+                            <input class="class-name" id="txtClass10" value="10th" placeholder="10th">
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtBoard10">Board / University</label>
+                            <select class="board" id="txtBoard10" required {% if form_disabled %}disabled{% endif %}>
+                                <option value="">Select Board</option>
+                            </select>
+                        </div>
+                        <div class="edu-field">
+                            <label>Stream</label>
+                            <div class="edu-stream-na" aria-hidden="true">—</div>
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtDuration10">Duration</label>
+                            <input class="duration" id="txtDuration10" placeholder="1">
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtYear10">Year</label>
+                            <input class="year" id="txtYear10" placeholder="2024" required>
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtTotalMarks10">Total Marks</label>
+                            <input class="total-marks" id="txtTotalMarks10" onkeyup="calculateRowPercentage(this)" required>
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtMarksObtained10">Obtained Marks</label>
+                            <input class="obtainedmarks" id="txtMarksObtained10" onkeyup="calculateRowPercentage(this)" required>
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtPercentage10">Percentage</label>
+                            <input class="percentage" id="txtPercentage10" readonly>
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtGrade10">Grade / Division</label>
+                            <input class="grade" id="txtGrade10" placeholder="Div">
+                        </div>
+                        <div class="edu-field edu-field--action" aria-hidden="true"></div>
                     </div>
                     <div id="row12th" class="edu-row edu-data-row">
-                        <input class="class-name" id="txtClass12" value="12th">
-                        <select class="board" id="txtBoard12" required {% if form_disabled %}disabled{% endif %}>
-                            <option value="">Select Board</option>
-                        </select>
-                        <select class="stream" id="ddlStream12" required {% if form_disabled %}disabled{% endif %}>
-                            <option value="">Select Stream</option>
-                            <option value="Science">Science</option>
-                            <option value="Arts">Arts</option>
-                            <option value="Commerce">Commerce</option>
-                        </select>
-                        <input class="duration" id="txtDuration12">
-                        <input class="year" id="txtYear12" placeholder="2024" required>
-                        <input class="total-marks" id="txtTotalMarks12" onkeyup="calculateRowPercentage(this)" required>
-                        <input class="obtainedmarks" id="txtMarksObtained12" onkeyup="calculateRowPercentage(this)" required>
-                        <input class="percentage" id="txtPercentage12" readonly>
-                        <input class="grade" id="txtGrade12">
-                        <div></div>
+                        <div class="edu-field">
+                            <label for="txtClass12">Class</label>
+                            <input class="class-name" id="txtClass12" value="12th">
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtBoard12">Board / University</label>
+                            <select class="board" id="txtBoard12" required {% if form_disabled %}disabled{% endif %}>
+                                <option value="">Select Board</option>
+                            </select>
+                        </div>
+                        <div class="edu-field">
+                            <label for="ddlStream12">Stream</label>
+                            <select class="stream" id="ddlStream12" required {% if form_disabled %}disabled{% endif %}>
+                                <option value="">Select Stream</option>
+                                <option value="Science">Science</option>
+                                <option value="Arts">Arts</option>
+                                <option value="Commerce">Commerce</option>
+                            </select>
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtDuration12">Duration</label>
+                            <input class="duration" id="txtDuration12">
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtYear12">Year</label>
+                            <input class="year" id="txtYear12" placeholder="2024" required>
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtTotalMarks12">Total Marks</label>
+                            <input class="total-marks" id="txtTotalMarks12" onkeyup="calculateRowPercentage(this)" required>
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtMarksObtained12">Obtained Marks</label>
+                            <input class="obtainedmarks" id="txtMarksObtained12" onkeyup="calculateRowPercentage(this)" required>
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtPercentage12">Percentage</label>
+                            <input class="percentage" id="txtPercentage12" readonly>
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtGrade12">Grade / Division</label>
+                            <input class="grade" id="txtGrade12">
+                        </div>
+                        <div class="edu-field edu-field--action" aria-hidden="true"></div>
                     </div>
                     <div id="rowGrad" class="edu-row edu-data-row hidden-row" style="display:none;">
-                        <input class="class-name" id="txtClassGrad" placeholder="Graduation">
-                        <select class="board" id="txtBoardGrad" {% if form_disabled %}disabled{% endif %}>
-                            <option value="">Select University</option>
-                        </select>
-                        <select class="stream" id="ddlStreamGrad" {% if form_disabled %}disabled{% endif %}>
-                            <option value="">Select Stream</option>
-                            <option value="Science">Science</option>
-                            <option value="Arts">Arts</option>
-                            <option value="Commerce">Commerce</option>
-                        </select>
-                        <input class="duration" id="txtDurationGrad"><input class="year" id="txtYearGrad">
-                        <input class="total-marks" id="txtTotalMarksGrad" onkeyup="calculateRowPercentage(this)">
-                        <input class="obtainedmarks" id="txtMarksObtainedGrad" onkeyup="calculateRowPercentage(this)">
-                        <input class="percentage" id="txtPercentageGrad" readonly><input class="grade" id="txtGradeGrad">
-                        <button type="button" class="btn-delete" onclick="removeRowDirect('Grad')">Remove</button>
+                        <div class="edu-field">
+                            <label for="txtClassGrad">Class</label>
+                            <input class="class-name" id="txtClassGrad" placeholder="Graduation">
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtBoardGrad">Board / University</label>
+                            <select class="board" id="txtBoardGrad" {% if form_disabled %}disabled{% endif %}>
+                                <option value="">Select University</option>
+                            </select>
+                        </div>
+                        <div class="edu-field">
+                            <label for="ddlStreamGrad">Stream</label>
+                            <select class="stream" id="ddlStreamGrad" {% if form_disabled %}disabled{% endif %}>
+                                <option value="">Select Stream</option>
+                                <option value="Science">Science</option>
+                                <option value="Arts">Arts</option>
+                                <option value="Commerce">Commerce</option>
+                            </select>
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtDurationGrad">Duration</label>
+                            <input class="duration" id="txtDurationGrad">
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtYearGrad">Year</label>
+                            <input class="year" id="txtYearGrad">
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtTotalMarksGrad">Total Marks</label>
+                            <input class="total-marks" id="txtTotalMarksGrad" onkeyup="calculateRowPercentage(this)">
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtMarksObtainedGrad">Obtained Marks</label>
+                            <input class="obtainedmarks" id="txtMarksObtainedGrad" onkeyup="calculateRowPercentage(this)">
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtPercentageGrad">Percentage</label>
+                            <input class="percentage" id="txtPercentageGrad" readonly>
+                        </div>
+                        <div class="edu-field">
+                            <label for="txtGradeGrad">Grade / Division</label>
+                            <input class="grade" id="txtGradeGrad">
+                        </div>
+                        <div class="edu-field edu-field--action">
+                            <label class="edu-field-label-sr">Action</label>
+                            <button type="button" class="btn-delete" onclick="removeRowDirect('Grad')">Remove</button>
+                        </div>
                     </div>
                 </div>
                 <div class="edu-buttons-panel">
@@ -265,29 +350,78 @@
             <!-- Step 4: Upload -->
             <div class="form-step" data-step="4">
                 <h2>Upload Photo & Signature</h2>
-                <div class="upload-card">
-                    <div class="upload-left">
-                        <label for="fuPhoto">Passport Photo *</label>
-                        <input type="file" id="fuPhoto" accept="image/jpeg,image/png" onchange="previewFile(event,'photo')" {% if form_disabled %}disabled{% endif %}>
-                        <small class="upload-info">Max 100KB (JPG/PNG)</small>
-                    </div>
-                    <img id="imgPhotoPreview" class="preview-img" src="{% static 'images/logo.png' %}" alt="Photo">
-                </div>
-                <div class="upload-card">
-                    <div class="upload-left">
-                        <label for="fuSign">Signature *</label>
-                        <input type="file" id="fuSign" accept="image/jpeg,image/png" onchange="previewFile(event,'sign')" {% if form_disabled %}disabled{% endif %}>
-                        <small class="upload-info">Max 50KB (JPG/PNG)</small>
-                    </div>
-                    <img id="imgSignPreview" class="preview-img sign-preview" src="{% static 'images/logo.png' %}" alt="Sign">
+                <p class="form-hint upload-step-hint">Upload a recent passport-size photograph and your scanned signature. Both files are required before preview and submission.</p>
+                <div class="upload-grid">
+                    <article class="upload-panel" id="photoUploadPanel">
+                        <div class="upload-panel__header">
+                            <span class="upload-panel__icon" aria-hidden="true"><i class="fas fa-id-card"></i></span>
+                            <div>
+                                <h3 class="upload-panel__title">Passport Photo <span class="req">*</span></h3>
+                                <p class="upload-panel__meta">JPG or PNG · Max 100KB</p>
+                            </div>
+                        </div>
+                        <div class="upload-panel__body">
+                            <div class="upload-preview upload-preview--photo" id="photoPreviewWrap">
+                                <img id="imgPhotoPreview" class="upload-preview__img" alt="Passport photo preview" hidden>
+                                <div class="upload-preview__empty" id="photoPlaceholder">
+                                    <i class="fas fa-user" aria-hidden="true"></i>
+                                    <span>No photo selected</span>
+                                </div>
+                            </div>
+                            <div class="upload-panel__actions">
+                                <label class="upload-file-btn" for="fuPhoto">
+                                    <i class="fas fa-upload" aria-hidden="true"></i> Choose Photo
+                                </label>
+                                <input type="file" id="fuPhoto" class="upload-file-input" accept="image/jpeg,image/png" onchange="previewFile(event,'photo')" {% if form_disabled %}disabled{% endif %}>
+                            </div>
+                            <ul class="upload-specs">
+                                <li>Passport size (3.5 × 4.5 cm)</li>
+                                <li>Plain white background</li>
+                                <li>Face clearly visible, no cap/goggles</li>
+                            </ul>
+                        </div>
+                    </article>
+                    <article class="upload-panel" id="signUploadPanel">
+                        <div class="upload-panel__header">
+                            <span class="upload-panel__icon upload-panel__icon--sign" aria-hidden="true"><i class="fas fa-signature"></i></span>
+                            <div>
+                                <h3 class="upload-panel__title">Signature <span class="req">*</span></h3>
+                                <p class="upload-panel__meta">JPG or PNG · Max 50KB</p>
+                            </div>
+                        </div>
+                        <div class="upload-panel__body">
+                            <div class="upload-preview upload-preview--sign" id="signPreviewWrap">
+                                <img id="imgSignPreview" class="upload-preview__img upload-preview__img--sign" alt="Signature preview" hidden>
+                                <div class="upload-preview__empty" id="signPlaceholder">
+                                    <i class="fas fa-pen-nib" aria-hidden="true"></i>
+                                    <span>No signature selected</span>
+                                </div>
+                            </div>
+                            <div class="upload-panel__actions">
+                                <label class="upload-file-btn" for="fuSign">
+                                    <i class="fas fa-upload" aria-hidden="true"></i> Choose Signature
+                                </label>
+                                <input type="file" id="fuSign" class="upload-file-input" accept="image/jpeg,image/png" onchange="previewFile(event,'sign')" {% if form_disabled %}disabled{% endif %}>
+                            </div>
+                            <ul class="upload-specs">
+                                <li>Sign on plain white paper</li>
+                                <li>Use black or blue ink only</li>
+                                <li>Signature must match your records</li>
+                            </ul>
+                        </div>
+                    </article>
                 </div>
             </div>
 
             <!-- Step 5: Declaration -->
             <div class="form-step" data-step="5">
                 <h2>Declaration</h2>
+                <p class="form-hint declaration-step-hint">Review your application details below. Accept the declaration, then click <strong>Submit</strong> to unlock preview.</p>
+                <div id="declarationSummary" class="declaration-summary" aria-live="polite">
+                    <p class="declaration-summary__loading">Loading application summary…</p>
+                </div>
                 <div class="declaration-box">
-                    <input type="checkbox" id="declarationCheck" onchange="handlePreviewButtonVisibility()" {% if form_disabled %}disabled{% endif %}>
+                    <input type="checkbox" id="declarationCheck" onchange="handleDeclarationActions()" {% if form_disabled %}disabled{% endif %}>
                     <label for="declarationCheck">I certify that the information provided is true. False information may lead to cancellation of admission.</label>
                 </div>
             </div>
@@ -297,6 +431,7 @@
                 <button type="button" id="btnPrev" class="btn-action back" onclick="changeStep(-1)" style="display:none">Back</button>
                 <button type="button" id="btnNext" class="btn-action next" onclick="changeStep(1)">Next</button>
                 <button type="button" id="btnReset" class="btn-action reset" onclick="resetForm(event)">Reset Step</button>
+                <button type="button" id="btnSubmit" class="btn-action submit" onclick="return submitApplicationStep()" style="display:none">Submit</button>
                 <button type="button" id="btnPreview" class="btn-action preview" onclick="return validateAndPreview()" style="display:none">Preview Application</button>
             </div>
             {% endif %}
@@ -328,5 +463,5 @@ window.ADMISSION_CONFIG = {
     boardsDataUrl: '{% static "data/india_boards_universities.json" %}',
 };
 </script>
-<script src="{% static 'js/admission_form.js' %}?v=11"></script>
+<script src="{% static 'js/admission_form.js' %}?v=16"></script>
 {% endblock %}
