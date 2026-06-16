@@ -5,6 +5,8 @@ set -e
 
 PROJECT_DIR="/home/ubuntu/django_ccp"
 VENV_DIR="$PROJECT_DIR/venv"
+PYTHON_BIN="$VENV_DIR/bin/python"
+PIP_BIN="$VENV_DIR/bin/pip"
 
 echo "=========================================="
 echo " Starting Django CCP Deployment Update... "
@@ -16,21 +18,29 @@ cd "$PROJECT_DIR"
 echo "1. Pulling latest code from git..."
 git pull
 
-# Activate virtual environment
-echo "2. Activating virtual environment..."
-source "$VENV_DIR/bin/activate"
+# Ensure project virtual environment exists (Debian/Ubuntu blocks system-wide pip)
+echo "2. Preparing virtual environment..."
+if [ ! -x "$PYTHON_BIN" ]; then
+    echo "   Creating venv at $VENV_DIR ..."
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "ERROR: python3 is not installed. Run: sudo apt update && sudo apt install -y python3 python3-venv python3-full"
+        exit 1
+    fi
+    python3 -m venv "$VENV_DIR"
+fi
 
-# Install/update packages
+# Install/update packages inside the venv (never use system pip on EC2)
 echo "3. Installing dependencies..."
-pip install -r requirements.txt
+"$PIP_BIN" install --upgrade pip
+"$PIP_BIN" install -r requirements.txt
 
 # Apply database migrations
 echo "4. Running database migrations..."
-python manage.py migrate --noinput
+"$PYTHON_BIN" manage.py migrate --noinput
 
 # Collect static files
 echo "5. Collecting static files..."
-python manage.py collectstatic --noinput
+"$PYTHON_BIN" manage.py collectstatic --noinput
 
 # Restart systemd services to pick up changes
 echo "6. Restarting Gunicorn..."
