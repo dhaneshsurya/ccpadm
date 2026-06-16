@@ -464,12 +464,16 @@ def get_application_lock_message(status):
 
 def get_application_print_view_context(admission, *, preview_mode=False):
     """Shared context for preview, print, and PDF views."""
+    from .submit_instruction import get_admission_submit_instruction
+
     context = get_print_context(admission)
     context['preview_mode'] = preview_mode
     context['can_submit'] = preview_mode and admission.status not in PRINTABLE_STATUSES
     context['can_download_pdf'] = admission.status in PRINTABLE_STATUSES
     context['can_edit_application'] = admission.status not in LOCKED_STATUSES
     context['application_lock_message'] = get_application_lock_message(admission.status)
+    if preview_mode and context['can_submit']:
+        context['submit_instruction'] = get_admission_submit_instruction()
     return context
 
 

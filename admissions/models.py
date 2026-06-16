@@ -124,6 +124,33 @@ class StudentEducation(models.Model):
         db_table = 'StudentEducation'
 
 
+class AdmissionSubmitInstruction(models.Model):
+    """Popup heading and notice shown when a student submits from the admission preview."""
+
+    heading = models.CharField(
+        max_length=200,
+        help_text='Title displayed at the top of the submit confirmation popup.',
+    )
+    notice = models.TextField(
+        help_text='Rich-text instruction students must read before confirming submission.',
+    )
+    sort_order = models.PositiveSmallIntegerField(
+        default=0,
+        help_text='Lower numbers are used first when multiple instructions are active.',
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['sort_order', 'id']
+        verbose_name = 'Submit application instruction'
+        verbose_name_plural = 'Submit application instructions'
+
+    def __str__(self):
+        return self.heading.strip() or self.notice.strip()[:60]
+
+
 class StudentDocument(models.Model):
     legacy_id = models.IntegerField(null=True, blank=True, unique=True, db_index=True)
     application_no = models.CharField(max_length=50, blank=True)

@@ -61,6 +61,13 @@ class Program(models.Model):
             'Leave blank for no limit.'
         ),
     )
+    show_department_in_course_name = models.BooleanField(
+        default=True,
+        help_text=(
+            'When enabled, department is shown before the course name on the admission '
+            'form and course lists (e.g. Hindi — Paper I).'
+        ),
+    )
 
     class Meta:
         db_table = 'Programs'

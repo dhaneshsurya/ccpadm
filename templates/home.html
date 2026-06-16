@@ -23,7 +23,7 @@
                         <div class="instruction-item__badge">{{ forloop.counter }}</div>
                         <div class="instruction-item__body">
                             <h3 class="instruction-item__title">{{ item.title }}</h3>
-                            <div class="instruction-item__description">{{ item.description|linebreaksbr }}</div>
+                            <div class="instruction-item__description rich-text-content ck-content">{{ item.description|safe }}</div>
                             {% if item.attached_file %}
                             <a href="{{ item.attached_file.url }}" class="instruction-item__file" target="_blank" rel="noopener noreferrer">
                                 <i class="fas fa-paperclip" aria-hidden="true"></i>
@@ -69,7 +69,7 @@
                         {% for notice in notices %}
                         <article class="notice-card">
                             <h3 class="notice-card__title">{{ notice.title }}</h3>
-                            <p class="notice-card__text">{{ notice.description }}</p>
+                            <div class="notice-card__text rich-text-content ck-content">{{ notice.description|safe }}</div>
                             {% if notice.attached_file %}
                             <a href="{{ notice.attached_file.url }}" class="notice-card__file" target="_blank" rel="noopener noreferrer">
                                 <i class="fas fa-download" aria-hidden="true"></i> Attachment

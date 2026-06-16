@@ -1140,6 +1140,35 @@ h3.college-title-main {
     line-height: 1.55;
 }
 
+.rich-text-content p,
+.rich-text-content ul,
+.rich-text-content ol,
+.rich-text-content blockquote {
+    margin: 0 0 0.65em;
+}
+
+.rich-text-content p:last-child,
+.rich-text-content ul:last-child,
+.rich-text-content ol:last-child,
+.rich-text-content blockquote:last-child {
+    margin-bottom: 0;
+}
+
+.rich-text-content ul,
+.rich-text-content ol {
+    padding-left: 1.25rem;
+}
+
+.rich-text-content a {
+    color: var(--ccp-blue);
+    text-decoration: underline;
+}
+
+.rich-text-content img {
+    max-width: 100%;
+    height: auto;
+}
+
 .instruction-item__file {
     display: inline-flex;
     align-items: center;

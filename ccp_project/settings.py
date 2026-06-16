@@ -21,6 +21,8 @@ context.Context.__copy__ = context_copy
 
 from dotenv import load_dotenv
 
+from .ckeditor_config import CKEDITOR_5_CONFIGS
+
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,6 +42,7 @@ INSTALLED_APPS = [
     'admissions',
     'courses',
     'admin_panel',
+    'django_ckeditor_5',
 ]
 
 MIDDLEWARE = [
@@ -120,3 +123,6 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
 
 LOGIN_URL = '/login/'
 STUDENT_SESSION_KEY = 'student_reg_no'
+
+CKEDITOR_5_FILE_UPLOAD_PERMISSION = 'staff'
+CKEDITOR_5_MAX_FILE_SIZE = 5

@@ -176,6 +176,71 @@
             cursor: not-allowed;
             opacity: 0.85;
         }
+        .submit-popup-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            padding: 16px;
+        }
+        .submit-popup-overlay[hidden] {
+            display: none;
+        }
+        .submit-popup-box {
+            background: #fff;
+            padding: 24px;
+            border-radius: 12px;
+            max-width: 520px;
+            width: 100%;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+            text-align: left;
+        }
+        .submit-popup-box h3 {
+            margin: 0 0 12px;
+            font-size: 18px;
+            color: #800000;
+            text-align: center;
+        }
+        .submit-popup-notice {
+            margin: 0 0 20px;
+            font-size: 13px;
+            line-height: 1.55;
+            color: #334155;
+        }
+        .submit-popup-notice p,
+        .submit-popup-notice ul,
+        .submit-popup-notice ol,
+        .submit-popup-notice blockquote {
+            margin: 0 0 0.65em;
+        }
+        .submit-popup-notice p:last-child,
+        .submit-popup-notice ul:last-child,
+        .submit-popup-notice ol:last-child,
+        .submit-popup-notice blockquote:last-child {
+            margin-bottom: 0;
+        }
+        .submit-popup-notice ul,
+        .submit-popup-notice ol {
+            padding-left: 1.25rem;
+        }
+        .submit-popup-notice a {
+            color: #0b3d91;
+            text-decoration: underline;
+        }
+        .submit-popup-notice img {
+            max-width: 100%;
+            height: auto;
+        }
+        .submit-popup-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
         .table-scroll-wrap {
             width: 100%;
         }
@@ -618,6 +683,19 @@
 </div>
 {% if not is_pdf %}</div></div></div>{% endif %}
 
+{% if preview_mode and can_submit and submit_instruction %}
+<div class="submit-popup-overlay no-print" id="submitInstructionPopup" hidden>
+    <div class="submit-popup-box" role="dialog" aria-modal="true" aria-labelledby="submitInstructionHeading">
+        <h3 id="submitInstructionHeading">{{ submit_instruction.heading }}</h3>
+        <div class="submit-popup-notice ck-content">{{ submit_instruction.notice|safe }}</div>
+        <div class="submit-popup-actions">
+            <button type="button" class="btn" id="btnSubmitPopupCancel">Cancel</button>
+            <button type="button" class="btn btn-primary" id="btnSubmitPopupConfirm">Confirm &amp; Submit</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% if not is_pdf %}
 <script>
 (function () {
@@ -737,17 +815,73 @@ document.getElementById('btnEditLocked')?.addEventListener('click', function() {
 {% endif %}
 {% if preview_mode and can_submit %}
 <script>
-document.getElementById('btnFinalSubmit')?.addEventListener('click', function() {
-    if (!confirm('Submit application? You cannot edit after submission.')) return;
-    fetch('{% url "submit_application" %}', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-        body: JSON.stringify({ application_no: '{{ admission.application_no|escapejs }}' }),
-    }).then(r => r.json()).then(res => {
-        if (res.status === 'SUCCESS') window.location.href = res.redirect || '/dashboard/';
-        else alert(res.message || 'Submit failed');
+(function() {
+    var popup = document.getElementById('submitInstructionPopup');
+    var submitBtn = document.getElementById('btnFinalSubmit');
+    var confirmBtn = document.getElementById('btnSubmitPopupConfirm');
+    var cancelBtn = document.getElementById('btnSubmitPopupCancel');
+    var submitting = false;
+
+    function submitApplication() {
+        if (submitting) return;
+        submitting = true;
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Submitting…';
+        }
+        fetch('{% url "submit_application" %}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ application_no: '{{ admission.application_no|escapejs }}' }),
+        }).then(function(r) { return r.json(); }).then(function(res) {
+            if (res.status === 'SUCCESS') {
+                window.location.href = res.redirect || '/dashboard/';
+            } else {
+                alert(res.message || 'Submit failed');
+                submitting = false;
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Confirm & Submit';
+                }
+            }
+        }).catch(function() {
+            alert('Submit failed. Please try again.');
+            submitting = false;
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Confirm & Submit';
+            }
+        });
+    }
+
+    function openSubmitPopup() {
+        if (popup) {
+            popup.hidden = false;
+            document.body.style.overflow = 'hidden';
+            confirmBtn?.focus();
+            return;
+        }
+        if (confirm('Submit application? You cannot edit after submission.')) {
+            submitApplication();
+        }
+    }
+
+    function closeSubmitPopup() {
+        if (!popup) return;
+        popup.hidden = true;
+        document.body.style.overflow = '';
+    }
+
+    submitBtn?.addEventListener('click', openSubmitPopup);
+    cancelBtn?.addEventListener('click', closeSubmitPopup);
+    confirmBtn?.addEventListener('click', submitApplication);
+    popup?.addEventListener('click', function(e) {
+        if (e.target === popup) closeSubmitPopup();
     });
-});
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && popup && !popup.hidden) closeSubmitPopup();
+    });
+})();
 </script>
 {% endif %}
 </body>

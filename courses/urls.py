@@ -12,6 +12,7 @@ urlpatterns = [
     path('programs/delete/<int:pk>/', views.delete_program, name='delete_program'),
     path('programs/sync/', views.sync_programs, name='sync_programs'),
     path('import-ug-docx/', views.import_ug_docx, name='import_ug_docx'),
+    path('toggle-show-department/', views.toggle_show_department, name='toggle_show_department'),
     path('toggle-compulsory/<int:pk>/', views.toggle_compulsory, name='toggle_compulsory'),
     path('delete/<int:pk>/', views.delete_course, name='delete_course'),
 ]

@@ -1,6 +1,8 @@
+from django_ckeditor_5.widgets import CKEditor5Widget
 from django import forms
 
 from .models import HelpdeskIssue, HelpdeskOfficer, ImportantInstruction, Notice
+from .rich_text import clean_rich_text
 
 
 class ImportantInstructionAdminForm(forms.ModelForm):
@@ -13,18 +15,17 @@ class ImportantInstructionAdminForm(forms.ModelForm):
                 'size': 80,
                 'placeholder': 'e.g. Document checklist for admission',
             }),
-            'description': forms.Textarea(attrs={
-                'class': 'vLargeTextField',
-                'rows': 6,
-                'cols': 80,
-                'placeholder': 'Enter the full instruction text…',
-            }),
+            'description': CKEditor5Widget(config_name='full'),
             'sort_order': forms.NumberInput(attrs={'min': 0, 'style': 'width: 6rem;'}),
         }
         help_texts = {
+            'description': 'Rich text with full formatting. Shown on the home page.',
             'sort_order': 'Lower numbers appear first.',
             'attached_file': 'Supported: PDF, DOC, DOCX, JPG, PNG (max 10 MB).',
         }
+
+    def clean_description(self):
+        return clean_rich_text(self.cleaned_data.get('description'), field_label='Description')
 
 
 class NoticeAdminForm(forms.ModelForm):
@@ -44,20 +45,19 @@ class NoticeAdminForm(forms.ModelForm):
                 'size': 80,
                 'placeholder': 'e.g. Last date for form submission',
             }),
-            'description': forms.Textarea(attrs={
-                'class': 'vLargeTextField',
-                'rows': 5,
-                'cols': 80,
-                'placeholder': 'Enter the notice text shown in the scrolling banner…',
-            }),
+            'description': CKEditor5Widget(config_name='full'),
             'sort_order': forms.NumberInput(attrs={'min': 0, 'style': 'width: 6rem;'}),
             'expires_at': forms.SplitDateTimeWidget(),
         }
         help_texts = {
+            'description': 'Rich text with full formatting. Shown in the scrolling notice banner.',
             'sort_order': 'Lower numbers appear first in the ticker.',
             'attached_file': 'Supported: PDF, DOC, DOCX, JPG, PNG (max 10 MB).',
             'expires_at': 'Leave blank to keep the notice visible until manually disabled.',
         }
+
+    def clean_description(self):
+        return clean_rich_text(self.cleaned_data.get('description'), field_label='Description')
 
 
 class HelpdeskOfficerAdminForm(forms.ModelForm):

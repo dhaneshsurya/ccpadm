@@ -7,6 +7,7 @@ from django.views.decorators.http import require_http_methods
 
 from accounts.models import Student
 from accounts.utils import get_student_sidebar_context, student_login_required
+from courses.course_display import format_course_display_name
 from courses.instructions import get_program_course_instructions
 from courses.models import Program, ProgramCourse
 from courses.subject_groups import (
@@ -114,10 +115,12 @@ def courses_api(request):
     )
     data = []
     for c in courses:
-        label = c.course_name
         department = normalize_department(c.department)
-        if department:
-            label = f'{department} — {c.course_name}'
+        label = format_course_display_name(
+            c.course_name,
+            department,
+            program_name=program_type,
+        )
         is_group_course = course_is_group_course(c, program_type) if show_bsc else False
         is_group_dsc = course_is_group_dsc(c, program_type) if show_bsc else False
         is_compulsory = course_is_program_compulsory(c, program_type)

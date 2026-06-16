@@ -114,6 +114,16 @@
             .replace(/'/g, '&#39;');
     }
 
+    function formatCourseNameDisplay(course) {
+        const dept = (course.department || '').trim();
+        const label = (course.course_name || '').trim();
+        if (!dept) return escapeHtml(label);
+        const prefix = `${dept} — `;
+        if (!label.startsWith(prefix)) return escapeHtml(label);
+        const paperName = label.slice(prefix.length);
+        return `<span class="course-dept-name">${escapeHtml(dept)}</span> — ${escapeHtml(paperName)}`;
+    }
+
     function renderCourseInstructions(instructions) {
         const panel = document.getElementById('courseProgramInstructions');
         if (!panel) return;
@@ -1870,7 +1880,7 @@
             }
             const groupCell = showBsc ? '<td>—</td>' : '';
             tr.innerHTML = `<td><input type="checkbox" ${checked} ${locked}${title}></td>
-                <td>${c.course_name}${compulsory ? ' <small class="compulsory-tag" style="color:#166534;font-weight:600;">(Compulsory)</small>' : ''}</td>
+                <td>${formatCourseNameDisplay(c)}${compulsory ? ' <small class="compulsory-tag" style="color:#166534;font-weight:600;">(Compulsory)</small>' : ''}</td>
                 ${groupCell}
                 <td>${c.course_type_1 || '-'}</td><td>${c.course_type_2 || 'N/A'}</td>`;
             tbody.appendChild(tr);

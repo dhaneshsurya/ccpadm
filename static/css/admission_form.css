@@ -356,6 +356,11 @@
     font-size: 13px;
 }
 
+.course-table .course-dept-name {
+    font-weight: 700;
+    color: #111827;
+}
+
 .course-table tr:hover td {
     background: #dbeafe;
 }

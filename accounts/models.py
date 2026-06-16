@@ -101,7 +101,7 @@ class ImportantInstruction(models.Model):
     """Important instructions displayed on the home page."""
 
     title = models.CharField(max_length=200)
-    description = models.TextField(help_text='Instruction details shown on the home page.')
+    description = models.TextField(help_text='Rich-text instruction details shown on the home page.')
     attached_file = models.FileField(
         upload_to=home_content_upload_path,
         blank=True,
@@ -130,7 +130,7 @@ class Notice(models.Model):
     """Scrolling notices displayed on the home page."""
 
     title = models.CharField(max_length=200)
-    description = models.TextField(help_text='Notice text shown in the scrolling ticker.')
+    description = models.TextField(help_text='Rich-text notice content shown in the scrolling ticker.')
     attached_file = models.FileField(
         upload_to=home_content_upload_path,
         blank=True,

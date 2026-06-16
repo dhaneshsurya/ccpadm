@@ -12,6 +12,7 @@ from .constants import (
     PROGRAM_LEVEL_CHOICES,
     choices_with_current,
 )
+from .course_display import program_shows_department_in_course_name
 from .docx_import import import_ug_courses_from_docx
 from .models import Program, ProgramCourse
 from .subject_groups import (
@@ -129,8 +130,14 @@ def manage_courses(request):
             edit_course.subject_groups.values_list('pk', flat=True),
         )
 
+    program_department_flags = {}
     course_list = list(courses)
     for course in course_list:
+        if course.program_type not in program_department_flags:
+            program_department_flags[course.program_type] = (
+                program_shows_department_in_course_name(course.program_type)
+            )
+        course.show_department_in_name = program_department_flags[course.program_type]
         if show_bsc_groups and is_bsc_program(course.program_type):
             course.subject_group_label = group_label_for_course(
                 course.department,
@@ -140,6 +147,12 @@ def manage_courses(request):
             )
         else:
             course.subject_group_label = ''
+
+    show_department_in_course_name = True
+    if program_filter != 'ALL':
+        show_department_in_course_name = program_shows_department_in_course_name(
+            program_filter,
+        )
 
     return render(request, 'courses/manage_courses.html', {
         'courses': course_list,
@@ -159,6 +172,7 @@ def manage_courses(request):
         'show_group_field': show_group_field,
         'available_subject_groups': available_subject_groups,
         'selected_subject_group_ids': selected_subject_group_ids,
+        'show_department_in_course_name': show_department_in_course_name,
     })
 
 
@@ -312,6 +326,32 @@ def edit_program(request, pk):
 
     messages.success(request, 'Program updated successfully.')
     return redirect(_manage_programs_url(_filter_querystring(request)))
+
+
+@admin_login_required
+@require_http_methods(['POST'])
+def toggle_show_department(request):
+    program_name = request.POST.get('program', '').strip()
+    if not program_name or program_name == 'ALL':
+        messages.error(request, 'Select a program to change department display.')
+        return redirect(_manage_courses_url(_filter_querystring(request)))
+
+    program = Program.objects.filter(program_name=program_name).first()
+    if not program:
+        messages.error(
+            request,
+            f'Program "{program_name}" was not found. Add it on Manage Programs first.',
+        )
+        return redirect(_manage_courses_url(_filter_querystring(request)))
+
+    program.show_department_in_course_name = not program.show_department_in_course_name
+    program.save(update_fields=['show_department_in_course_name'])
+    state = 'shown' if program.show_department_in_course_name else 'hidden'
+    messages.success(
+        request,
+        f'Department name is now {state} before course names for "{program_name}".',
+    )
+    return redirect(_manage_courses_url(_filter_querystring(request)))
 
 
 @admin_login_required
