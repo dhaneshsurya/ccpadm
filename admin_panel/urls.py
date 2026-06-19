@@ -11,8 +11,10 @@ urlpatterns = [
     path('students/delete/<int:pk>/', views.delete_student, name='delete_student'),
     path('students/reset-password/<int:pk>/', views.reset_student_password, name='reset_student_password'),
     path('students/toggle-verified/<int:pk>/', views.toggle_student_verified, name='toggle_student_verified'),
+    path('students/bulk-action/', views.bulk_student_action, name='bulk_student_action'),
     path('students/export/', views.export_students_csv, name='export_students_csv'),
     path('students/print/<str:app_no>/', views.admin_print_application, name='admin_print_application'),
     path('students/pdf/<str:app_no>/', views.admin_download_pdf, name='admin_download_pdf'),
     path('admission/<int:pk>/status/', views.update_admission_status, name='update_admission_status'),
+    path('admissions/bulk-status/', views.bulk_update_admission_status, name='bulk_update_admission_status'),
 ]

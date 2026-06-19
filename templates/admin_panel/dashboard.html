@@ -3,7 +3,7 @@
 {% block title %}Admin Dashboard{% endblock %}
 
 {% block content %}
-<div class="portal-page">
+<div class="portal-page portal-page--wide">
     <div class="portal-main">
         <div class="page-header page-header--admin">
             <h2 class="page-title"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h2>
@@ -41,10 +41,30 @@
         </div>
 
         <h3 class="section-title">Recent Applications</h3>
+
+        <form method="post" action="{% url 'bulk_update_admission_status' %}" id="bulkActionForm" class="bulk-action-bar" hidden>
+            {% csrf_token %}
+            <span class="bulk-action-bar__count" id="bulkSelectedCount">0 selected</span>
+            <select name="status" id="bulkStatusSelect" class="portal-input" disabled aria-label="Bulk status action">
+                <option value="">Choose action...</option>
+                <option value="Approved">Approve selected</option>
+                <option value="Rejected">Reject selected</option>
+                <option value="Pending">Mark as Pending</option>
+            </select>
+            <button type="submit" class="btn btn-secondary btn-sm" id="bulkApplyBtn" disabled>
+                <i class="fas fa-check-double" aria-hidden="true"></i> Apply
+            </button>
+        </form>
+
         <div class="table-wrap">
-            <table class="data-table">
+            <table class="data-table" id="recentApplicationsTable">
                 <thead>
                     <tr>
+                        <th class="col-select">
+                            <label class="table-checkbox" title="Select all">
+                                <input type="checkbox" id="selectAllRows" aria-label="Select all applications">
+                            </label>
+                        </th>
                         <th>App No</th>
                         <th>Name</th>
                         <th>Reg No</th>
@@ -55,6 +75,11 @@
                 <tbody>
                     {% for a in recent %}
                     <tr>
+                        <td class="col-select">
+                            <label class="table-checkbox">
+                                <input type="checkbox" class="row-select" value="{{ a.pk }}" aria-label="Select {{ a.full_name }}">
+                            </label>
+                        </td>
                         <td>{{ a.application_no|default:"—" }}</td>
                         <td>{{ a.full_name }}</td>
                         <td>{{ a.reg_no }}</td>
@@ -83,7 +108,7 @@
                     </tr>
                     {% empty %}
                     <tr class="empty-row">
-                        <td colspan="5">No applications yet.</td>
+                        <td colspan="6">No applications yet.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -91,4 +116,87 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const table = document.getElementById('recentApplicationsTable');
+    const bulkForm = document.getElementById('bulkActionForm');
+    const selectAll = document.getElementById('selectAllRows');
+    const bulkCount = document.getElementById('bulkSelectedCount');
+    const bulkStatus = document.getElementById('bulkStatusSelect');
+    const bulkApplyBtn = document.getElementById('bulkApplyBtn');
+
+    if (!table || !bulkForm) {
+        return;
+    }
+
+    const rowChecks = () => Array.from(table.querySelectorAll('.row-select'));
+
+    function selectedRows() {
+        return rowChecks().filter((cb) => cb.checked);
+    }
+
+    function syncBulkControls() {
+        const selected = selectedRows();
+        const count = selected.length;
+        const hasSelection = count > 0;
+
+        bulkForm.hidden = !hasSelection;
+        bulkCount.textContent = count + (count === 1 ? ' application selected' : ' applications selected');
+        bulkStatus.disabled = !hasSelection;
+        bulkApplyBtn.disabled = !hasSelection || !bulkStatus.value;
+
+        if (selectAll) {
+            const allRows = rowChecks();
+            selectAll.indeterminate = count > 0 && count < allRows.length;
+            selectAll.checked = allRows.length > 0 && count === allRows.length;
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            const checked = selectAll.checked;
+            rowChecks().forEach((cb) => {
+                cb.checked = checked;
+            });
+            syncBulkControls();
+        });
+    }
+
+    table.addEventListener('change', function (event) {
+        if (event.target.classList.contains('row-select')) {
+            syncBulkControls();
+        }
+    });
+
+    bulkStatus.addEventListener('change', syncBulkControls);
+
+    bulkForm.addEventListener('submit', function (event) {
+        const selected = selectedRows();
+        if (!selected.length || !bulkStatus.value) {
+            event.preventDefault();
+            return;
+        }
+
+        const actionLabel = bulkStatus.options[bulkStatus.selectedIndex].text;
+        if (!window.confirm('Apply "' + actionLabel + '" to ' + selected.length + ' selected application(s)?')) {
+            event.preventDefault();
+            return;
+        }
+
+        bulkForm.querySelectorAll('input[name="admission_ids"]').forEach((input) => input.remove());
+        selected.forEach((cb) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'admission_ids';
+            input.value = cb.value;
+            bulkForm.appendChild(input);
+        });
+    });
+
+    syncBulkControls();
+})();
+</script>
 {% endblock %}

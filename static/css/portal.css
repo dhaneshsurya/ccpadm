@@ -544,6 +544,25 @@ h3.college-title-main {
     margin: 0 auto;
 }
 
+/* Wide admin tables (e.g. students list) — use full main width, no inner scroll */
+.layout-wrapper:has(.portal-page--wide) {
+    max-width: 1440px;
+}
+
+.portal-page--wide {
+    max-width: 100%;
+}
+
+.portal-page--wide .portal-main {
+    width: 100%;
+}
+
+@media (min-width: 1024px) {
+    .portal-page--wide .table-wrap {
+        overflow-x: visible;
+    }
+}
+
 .portal-layout {
     display: grid;
     grid-template-columns: 260px 1fr;
@@ -1730,6 +1749,55 @@ h3.college-title-main {
     flex-wrap: wrap;
     gap: 6px;
     align-items: center;
+}
+
+.bulk-action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md);
+}
+
+.bulk-action-bar[hidden] {
+    display: none;
+}
+
+.bulk-action-bar__count {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-right: 4px;
+}
+
+.bulk-action-bar .portal-input {
+    min-width: 200px;
+    max-width: 260px;
+}
+
+.data-table .col-select {
+    width: 44px;
+    text-align: center;
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+.table-checkbox {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.table-checkbox input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--ccp-maroon);
+    cursor: pointer;
 }
 
 .password-cell .student-password {

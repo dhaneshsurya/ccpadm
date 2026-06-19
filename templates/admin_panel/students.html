@@ -3,7 +3,7 @@
 {% block title %}Manage Students{% endblock %}
 
 {% block content %}
-<div class="portal-page">
+<div class="portal-page portal-page--wide">
     <div class="portal-main">
         <div class="page-header page-header--admin">
             <h2 class="page-title"><i class="fas fa-users"></i> Registered Students</h2>
@@ -34,10 +34,33 @@
 
         <p class="field-hint" style="margin-bottom: var(--space-md);">{{ total_count }} student(s) found</p>
 
+        <form method="post" action="{% url 'bulk_student_action' %}" id="bulkActionForm" class="bulk-action-bar" hidden>
+            {% csrf_token %}
+            <input type="hidden" name="search" value="{{ search }}">
+            <input type="hidden" name="program" value="{{ program_filter }}">
+            <input type="hidden" name="verified" value="{{ verified_filter }}">
+            <span class="bulk-action-bar__count" id="bulkSelectedCount">0 selected</span>
+            <select name="action" id="bulkActionSelect" class="portal-input" disabled aria-label="Bulk student action">
+                <option value="">Choose action...</option>
+                <option value="verify">Mark as verified</option>
+                <option value="unverify">Mark as not verified</option>
+                <option value="reset_password">Reset passwords</option>
+                <option value="delete">Delete selected</option>
+            </select>
+            <button type="submit" class="btn btn-secondary btn-sm" id="bulkApplyBtn" disabled>
+                <i class="fas fa-check-double" aria-hidden="true"></i> Apply
+            </button>
+        </form>
+
         <div class="table-wrap">
-            <table class="data-table">
+            <table class="data-table" id="studentsTable">
                 <thead>
                     <tr>
+                        <th class="col-select">
+                            <label class="table-checkbox" title="Select all">
+                                <input type="checkbox" id="selectAllRows" aria-label="Select all students">
+                            </label>
+                        </th>
                         <th>Reg No</th>
                         <th>Name</th>
                         <th>Contact</th>
@@ -51,6 +74,11 @@
                 <tbody>
                     {% for s in students %}
                     <tr>
+                        <td class="col-select">
+                            <label class="table-checkbox">
+                                <input type="checkbox" class="row-select" value="{{ s.pk }}" aria-label="Select {{ s.full_name }}">
+                            </label>
+                        </td>
                         <td><strong>{{ s.registration_no }}</strong></td>
                         <td>{{ s.full_name }}</td>
                         <td>
@@ -126,7 +154,7 @@
                     </tr>
                     {% empty %}
                     <tr class="empty-row">
-                        <td colspan="8">No students found.</td>
+                        <td colspan="9">No students found.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -220,8 +248,103 @@ window.alert(
     '\nNew password: {{ reset_password_display.password|escapejs }}'
 );
 {% endif %}
+{% if bulk_reset_passwords_display %}
+window.alert(
+    'New passwords:\n\n' + [
+        {% for item in bulk_reset_passwords_display %}
+        '{{ item.registration_no|escapejs }}: {{ item.password|escapejs }}'{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ].join('\n')
+);
+{% endif %}
 {% if edit_student %}
 document.getElementById('student-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 {% endif %}
+
+(function () {
+    const table = document.getElementById('studentsTable');
+    const bulkForm = document.getElementById('bulkActionForm');
+    const selectAll = document.getElementById('selectAllRows');
+    const bulkCount = document.getElementById('bulkSelectedCount');
+    const bulkAction = document.getElementById('bulkActionSelect');
+    const bulkApplyBtn = document.getElementById('bulkApplyBtn');
+
+    if (!table || !bulkForm) {
+        return;
+    }
+
+    const rowChecks = () => Array.from(table.querySelectorAll('.row-select'));
+
+    function selectedRows() {
+        return rowChecks().filter((cb) => cb.checked);
+    }
+
+    function syncBulkControls() {
+        const selected = selectedRows();
+        const count = selected.length;
+        const hasSelection = count > 0;
+
+        bulkForm.hidden = !hasSelection;
+        bulkCount.textContent = count + (count === 1 ? ' student selected' : ' students selected');
+        bulkAction.disabled = !hasSelection;
+        bulkApplyBtn.disabled = !hasSelection || !bulkAction.value;
+
+        if (selectAll) {
+            const allRows = rowChecks();
+            selectAll.indeterminate = count > 0 && count < allRows.length;
+            selectAll.checked = allRows.length > 0 && count === allRows.length;
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            const checked = selectAll.checked;
+            rowChecks().forEach((cb) => {
+                cb.checked = checked;
+            });
+            syncBulkControls();
+        });
+    }
+
+    table.addEventListener('change', function (event) {
+        if (event.target.classList.contains('row-select')) {
+            syncBulkControls();
+        }
+    });
+
+    bulkAction.addEventListener('change', syncBulkControls);
+
+    bulkForm.addEventListener('submit', function (event) {
+        const selected = selectedRows();
+        if (!selected.length || !bulkAction.value) {
+            event.preventDefault();
+            return;
+        }
+
+        const actionLabel = bulkAction.options[bulkAction.selectedIndex].text;
+        let confirmMessage = 'Apply "' + actionLabel + '" to ' + selected.length + ' selected student(s)?';
+        if (bulkAction.value === 'delete') {
+            confirmMessage += '\n\nThis cannot be undone. Students with submitted applications will be skipped.';
+        } else if (bulkAction.value === 'reset_password') {
+            confirmMessage += '\n\nNew passwords will be shown after the action completes.';
+        }
+
+        if (!window.confirm(confirmMessage)) {
+            event.preventDefault();
+            return;
+        }
+
+        bulkForm.querySelectorAll('input[name="student_ids"]').forEach((input) => input.remove());
+        selected.forEach((cb) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'student_ids';
+            input.value = cb.value;
+            bulkForm.appendChild(input);
+        });
+    });
+
+    syncBulkControls();
+})();
 </script>
 {% endblock %}

@@ -212,6 +212,7 @@ def manage_students(request):
 
     program_types = get_program_names(active_only=False)
     reset_password_display = request.session.pop('reset_password_display', None)
+    bulk_reset_passwords_display = request.session.pop('bulk_reset_passwords_display', None)
 
     return render(request, 'admin_panel/students.html', {
         'students': students,
@@ -223,6 +224,7 @@ def manage_students(request):
         'filter_params': params,
         'total_count': len(students),
         'reset_password_display': reset_password_display,
+        'bulk_reset_passwords_display': bulk_reset_passwords_display,
     })
 
 
@@ -299,6 +301,91 @@ def toggle_student_verified(request, pk):
 
 
 @admin_login_required
+@require_http_methods(['POST'])
+def bulk_student_action(request):
+    valid_actions = ('verify', 'unverify', 'reset_password', 'delete')
+    params = _students_filter_params(request)
+    raw_ids = request.POST.getlist('student_ids')
+    student_ids = []
+    for raw_id in raw_ids:
+        try:
+            student_ids.append(int(raw_id))
+        except (TypeError, ValueError):
+            continue
+
+    action = request.POST.get('action', '').strip()
+    if not student_ids:
+        messages.error(request, 'Select at least one student.')
+        return redirect(_students_url(params))
+    if action not in valid_actions:
+        messages.error(request, 'Choose a valid action.')
+        return redirect(_students_url(params))
+
+    students = list(Student.objects.filter(pk__in=student_ids))
+    if not students:
+        messages.error(request, 'No matching students found.')
+        return redirect(_students_url(params))
+
+    if action == 'verify':
+        updated = Student.objects.filter(pk__in=student_ids).update(is_verified=True)
+        messages.success(
+            request,
+            f'Marked {updated} student{"s" if updated != 1 else ""} as verified.',
+        )
+    elif action == 'unverify':
+        updated = Student.objects.filter(pk__in=student_ids).update(is_verified=False)
+        messages.success(
+            request,
+            f'Marked {updated} student{"s" if updated != 1 else ""} as not verified.',
+        )
+    elif action == 'reset_password':
+        reset_list = []
+        for student in students:
+            new_password = generate_secure_password()
+            student.password = new_password
+            student.save(update_fields=['password'])
+            reset_list.append({
+                'registration_no': student.registration_no,
+                'password': new_password,
+            })
+        request.session['bulk_reset_passwords_display'] = reset_list
+        messages.success(
+            request,
+            f'Reset password for {len(reset_list)} student{"s" if len(reset_list) != 1 else ""}.',
+        )
+    elif action == 'delete':
+        deleted = 0
+        skipped = []
+        for student in students:
+            if StudentAdmission.objects.filter(
+                reg_no=student.registration_no,
+                status='Submitted',
+            ).exists():
+                skipped.append(student.registration_no)
+                continue
+            reg_no = student.registration_no
+            StudentAdmission.objects.filter(reg_no=reg_no).delete()
+            student.delete()
+            deleted += 1
+        if deleted:
+            messages.success(
+                request,
+                f'Deleted {deleted} student{"s" if deleted != 1 else ""}.',
+            )
+        if skipped:
+            messages.warning(
+                request,
+                'Skipped '
+                f'{len(skipped)} student{"s" if len(skipped) != 1 else ""} with submitted applications: '
+                + ', '.join(skipped),
+            )
+        if not deleted and not skipped:
+            messages.error(request, 'No students were deleted.')
+
+    return redirect(_students_url(params))
+
+
+@admin_login_required
 def export_students_csv(request):
     params = _students_filter_params(request)
     students = _attach_admissions(
@@ -364,3 +451,34 @@ def update_admission_status(request, pk):
         admission.save(update_fields=['status'])
         messages.success(request, f'Status updated to {new_status}.')
     return redirect(request.POST.get('next', 'admin_dashboard'))
+
+
+@admin_login_required
+@require_http_methods(['POST'])
+def bulk_update_admission_status(request):
+    valid_statuses = ('Approved', 'Rejected', 'Pending', 'Submitted')
+    raw_ids = request.POST.getlist('admission_ids')
+    admission_ids = []
+    for raw_id in raw_ids:
+        try:
+            admission_ids.append(int(raw_id))
+        except (TypeError, ValueError):
+            continue
+
+    new_status = request.POST.get('status', '').strip()
+    if not admission_ids:
+        messages.error(request, 'Select at least one application.')
+        return redirect('admin_dashboard')
+    if new_status not in valid_statuses:
+        messages.error(request, 'Choose a valid status.')
+        return redirect('admin_dashboard')
+
+    updated = StudentAdmission.objects.filter(pk__in=admission_ids).update(status=new_status)
+    if updated:
+        messages.success(
+            request,
+            f'Updated {updated} application{"s" if updated != 1 else ""} to {new_status}.',
+        )
+    else:
+        messages.error(request, 'No matching applications found.')
+    return redirect('admin_dashboard')
