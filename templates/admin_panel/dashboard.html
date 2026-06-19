@@ -68,6 +68,7 @@
                         <th>App No</th>
                         <th>Name</th>
                         <th>Reg No</th>
+                        <th>Program</th>
                         <th>Status</th>
                         <th>Action</th>
                     </tr>
@@ -83,6 +84,7 @@
                         <td>{{ a.application_no|default:"—" }}</td>
                         <td>{{ a.full_name }}</td>
                         <td>{{ a.reg_no }}</td>
+                        <td>{{ a.program_type|default:"—" }}</td>
                         <td>
                             {% if a.status == 'Approved' %}
                             <span class="badge badge-success">{{ a.status }}</span>
@@ -108,7 +110,7 @@
                     </tr>
                     {% empty %}
                     <tr class="empty-row">
-                        <td colspan="6">No applications yet.</td>
+                        <td colspan="7">No applications yet.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
