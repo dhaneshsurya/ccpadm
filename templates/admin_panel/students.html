@@ -45,6 +45,7 @@
                 <option value="verify">Mark as verified</option>
                 <option value="unverify">Mark as not verified</option>
                 <option value="reset_password">Reset passwords</option>
+                <option value="reject_application">Reject applications</option>
                 <option value="delete">Delete selected</option>
             </select>
             <button type="submit" class="btn btn-secondary btn-sm" id="bulkApplyBtn" disabled>
@@ -130,6 +131,20 @@
                                     <i class="fas fa-key"></i>
                                 </button>
                             </form>
+                            {% if s.latest_admission %}
+                            {% if s.latest_admission.status == 'Submitted' or s.latest_admission.status == 'Pending' or s.latest_admission.status == 'Approved' %}
+                            <form method="post" action="{% url 'update_admission_status' s.latest_admission.pk %}" class="inline-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'manage_students' %}?search={{ search|urlencode }}&amp;program={{ program_filter|urlencode }}&amp;verified={{ verified_filter|urlencode }}">
+                                <select name="status" class="portal-input portal-input--compact" onchange="this.form.submit()" aria-label="Application action for {{ s.registration_no }}">
+                                    <option value="">Application...</option>
+                                    <option value="Rejected">Reject</option>
+                                    <option value="Approved">Approve</option>
+                                    <option value="Pending">Pending</option>
+                                </select>
+                            </form>
+                            {% endif %}
+                            {% endif %}
                             {% if s.latest_admission and s.latest_admission.application_no and s.latest_admission.status == 'Submitted' %}
                             <a href="{% url 'admin_print_application' s.latest_admission.application_no %}" target="_blank"
                                class="btn btn-sm btn-ghost" title="Print application">
@@ -140,6 +155,12 @@
                                 <i class="fas fa-file-pdf"></i>
                             </a>
                             {% endif %}
+                            {% if s.latest_admission and s.latest_admission.status == 'Submitted' %}
+                            <button type="button" class="btn btn-sm btn-danger" disabled
+                                    title="Reject the submitted application before deleting">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% else %}
                             <form method="post" action="{% url 'delete_student' s.pk %}" class="inline-form"
                                   onsubmit="return confirm('Delete student {{ s.registration_no }}? This cannot be undone.');">
                                 {% csrf_token %}
@@ -150,6 +171,7 @@
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </form>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
@@ -324,7 +346,9 @@ document.getElementById('student-form')?.scrollIntoView({ behavior: 'smooth', bl
         const actionLabel = bulkAction.options[bulkAction.selectedIndex].text;
         let confirmMessage = 'Apply "' + actionLabel + '" to ' + selected.length + ' selected student(s)?';
         if (bulkAction.value === 'delete') {
-            confirmMessage += '\n\nThis cannot be undone. Students with submitted applications will be skipped.';
+            confirmMessage += '\n\nThis cannot be undone. Students with submitted applications will be skipped (reject them first).';
+        } else if (bulkAction.value === 'reject_application') {
+            confirmMessage += '\n\nRejected students can be deleted afterwards.';
         } else if (bulkAction.value === 'reset_password') {
             confirmMessage += '\n\nNew passwords will be shown after the action completes.';
         }

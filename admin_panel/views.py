@@ -112,6 +112,26 @@ def _attach_admissions(students):
     return students
 
 
+_REJECTABLE_ADMISSION_STATUSES = ('Submitted', 'Pending', 'Approved')
+
+
+def _get_latest_admission_for_student(student):
+    return (
+        StudentAdmission.objects.filter(reg_no=student.registration_no)
+        .order_by('-submitted_date', '-created_date')
+        .first()
+    )
+
+
+def _reject_student_application(student):
+    admission = _get_latest_admission_for_student(student)
+    if not admission or admission.status not in _REJECTABLE_ADMISSION_STATUSES:
+        return False
+    admission.status = 'Rejected'
+    admission.save(update_fields=['status'])
+    return True
+
+
 def _validate_student_form(post, student=None):
     errors = []
     full_name = post.get('full_name', '').strip()
@@ -261,7 +281,7 @@ def delete_student(request, pk):
     if StudentAdmission.objects.filter(reg_no=student.registration_no, status='Submitted').exists():
         messages.error(
             request,
-            f'Cannot delete {student.registration_no} — a submitted application exists.',
+            f'Cannot delete {student.registration_no} — reject the submitted application first.',
         )
         return redirect(_students_url(params))
 
@@ -303,7 +323,7 @@ def toggle_student_verified(request, pk):
 @admin_login_required
 @require_http_methods(['POST'])
 def bulk_student_action(request):
-    valid_actions = ('verify', 'unverify', 'reset_password', 'delete')
+    valid_actions = ('verify', 'unverify', 'reset_password', 'reject_application', 'delete')
     params = _students_filter_params(request)
     raw_ids = request.POST.getlist('student_ids')
     student_ids = []
@@ -353,6 +373,29 @@ def bulk_student_action(request):
             request,
             f'Reset password for {len(reset_list)} student{"s" if len(reset_list) != 1 else ""}.',
         )
+    elif action == 'reject_application':
+        rejected = 0
+        skipped = []
+        for student in students:
+            if _reject_student_application(student):
+                rejected += 1
+            else:
+                skipped.append(student.registration_no)
+        if rejected:
+            messages.success(
+                request,
+                f'Rejected {rejected} application{"s" if rejected != 1 else ""}. '
+                'Those students can now be deleted.',
+            )
+        if skipped:
+            messages.warning(
+                request,
+                'Skipped '
+                f'{len(skipped)} student{"s" if len(skipped) != 1 else ""} with no rejectable application: '
+                + ', '.join(skipped),
+            )
+        if not rejected and not skipped:
+            messages.error(request, 'No applications were rejected.')
     elif action == 'delete':
         deleted = 0
         skipped = []
@@ -376,7 +419,8 @@ def bulk_student_action(request):
             messages.warning(
                 request,
                 'Skipped '
-                f'{len(skipped)} student{"s" if len(skipped) != 1 else ""} with submitted applications: '
+                f'{len(skipped)} student{"s" if len(skipped) != 1 else ""} with submitted applications '
+                '(reject the application first): '
                 + ', '.join(skipped),
             )
         if not deleted and not skipped:

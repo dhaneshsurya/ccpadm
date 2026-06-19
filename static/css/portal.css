@@ -1751,6 +1751,13 @@ h3.college-title-main {
     align-items: center;
 }
 
+.action-cell .portal-input--compact {
+    min-width: 118px;
+    max-width: 132px;
+    padding: 6px 10px;
+    font-size: 0.82rem;
+}
+
 .bulk-action-bar {
     display: flex;
     flex-wrap: wrap;
