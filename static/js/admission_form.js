@@ -18,6 +18,7 @@
     let previewUnlocked = false;
     let maxCourseSelections = null;
     let optionalCheckOrder = [];
+    const OTHER_SCHOOL_BOARD = 'Other School Board';
     const bscProgramName = cfg.bscProgramName || 'B.Sc.';
     const bscProgramNames = new Set([
         bscProgramName,
@@ -425,6 +426,13 @@
         return el ? el.value.trim() : '';
     }
 
+    function normalizeMaritalStatus(value) {
+        const text = (value || '').trim();
+        if (!text) return '';
+        if (text.toLowerCase() === 'single') return 'Un-Married';
+        return text;
+    }
+
     function getAppNo() {
         const el = document.getElementById('lblAppNo');
         if (!el) return cfg.draftAppNo || '';
@@ -826,7 +834,7 @@
             }
             education.push({
                 ClassName: classNameVal,
-                Board: row.querySelector('.board')?.value || '',
+                Board: getBoardValueFromRow(row),
                 Stream: row.querySelector('.stream')?.value || '',
                 Duration: row.querySelector('.duration')?.value || '',
                 Year: row.querySelector('.year')?.value || '',
@@ -883,7 +891,7 @@
             Category: val('ddlCategory'),
             Nationality: val('txtNationality') || 'Indian',
             Religion: val('ddlReligion'),
-            MaritalStatus: val('ddlMaritalStatus'),
+            MaritalStatus: normalizeMaritalStatus(val('ddlMaritalStatus')),
             BloodGroup: val('ddlBloodGroup'),
             DOB: val('txtDOB'),
             Mobile: val('txtMobile'),
@@ -1247,6 +1255,97 @@
         }
     }
 
+    function isOtherSchoolBoardValue(value) {
+        return (value || '').trim() === OTHER_SCHOOL_BOARD;
+    }
+
+    function getBoardOtherInput(selectEl) {
+        if (!selectEl) return null;
+        const row = selectEl.closest('.edu-data-row');
+        return row ? row.querySelector('.board-other-input') : null;
+    }
+
+    function syncBoardOtherInput(selectEl) {
+        const otherInput = getBoardOtherInput(selectEl);
+        if (!selectEl || !otherInput) return;
+        const isOther = isOtherSchoolBoardValue(selectEl.value);
+        otherInput.hidden = !isOther;
+        otherInput.required = isOther;
+        if (!isOther) {
+            otherInput.value = '';
+            otherInput.classList.remove('required-error');
+        }
+    }
+
+    function getBoardValueFromRow(row) {
+        const select = row.querySelector('select.board');
+        if (!select) return '';
+        if (isOtherSchoolBoardValue(select.value)) {
+            return (getBoardOtherInput(select)?.value || '').trim();
+        }
+        return (select.value || '').trim();
+    }
+
+    function applySchoolBoardSelection(selectEl, storedBoardValue, schoolBoards) {
+        if (!selectEl) return;
+        const stored = (storedBoardValue || '').trim();
+        fillBoardSelect(selectEl, schoolBoards, 'Select Board', '');
+        const otherInput = getBoardOtherInput(selectEl);
+        if (!stored) {
+            syncBoardOtherInput(selectEl);
+            return;
+        }
+        if (schoolBoards.includes(stored)) {
+            selectEl.value = stored;
+        } else {
+            selectEl.value = OTHER_SCHOOL_BOARD;
+            if (otherInput) otherInput.value = stored;
+        }
+        syncBoardOtherInput(selectEl);
+    }
+
+    function bindSchoolBoardOtherHandlers() {
+        [
+            ['txtBoard10', 'txtBoard10Other'],
+            ['txtBoard12', 'txtBoard12Other'],
+        ].forEach(([selectId, otherId]) => {
+            const selectEl = document.getElementById(selectId);
+            if (selectEl && selectEl.dataset.boardOtherBound !== '1') {
+                selectEl.dataset.boardOtherBound = '1';
+                selectEl.addEventListener('change', () => {
+                    syncBoardOtherInput(selectEl);
+                    persistEducationDraftLocally();
+                });
+            }
+            const otherInput = document.getElementById(otherId);
+            if (otherInput && otherInput.dataset.boardOtherBound !== '1') {
+                otherInput.dataset.boardOtherBound = '1';
+                otherInput.addEventListener('input', persistEducationDraftLocally);
+            }
+        });
+    }
+
+    function validateSchoolBoardOtherFields() {
+        const checks = [
+            ['txtBoard10', 'txtBoard10Other', '10th'],
+            ['txtBoard12', 'txtBoard12Other', '12th'],
+        ];
+        for (const [selectId, otherId, label] of checks) {
+            const selectEl = document.getElementById(selectId);
+            const otherInput = document.getElementById(otherId);
+            if (!selectEl || !otherInput || !isOtherSchoolBoardValue(selectEl.value)) continue;
+            if (!otherInput.value.trim()) {
+                otherInput.classList.add('required-error');
+                showStep(2);
+                otherInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                alert('Please enter the board name for ' + label + '.');
+                return false;
+            }
+            otherInput.classList.remove('required-error');
+        }
+        return true;
+    }
+
     function fillBoardSelect(selectEl, options, placeholder, selectedValue = '') {
         if (!selectEl) return;
         selectEl.innerHTML = '';
@@ -1309,23 +1408,22 @@
 
     function initEducationBoardSelects(preserveValues = {}) {
         const schoolBoards = boardsUniversitiesData.school_boards || [];
-        fillBoardSelect(
+        applySchoolBoardSelection(
             document.getElementById('txtBoard10'),
-            schoolBoards,
-            'Select Board',
             preserveValues.txtBoard10 || '',
-        );
-        fillBoardSelect(
-            document.getElementById('txtBoard12'),
             schoolBoards,
-            'Select Board',
+        );
+        applySchoolBoardSelection(
+            document.getElementById('txtBoard12'),
             preserveValues.txtBoard12 || '',
+            schoolBoards,
         );
         fillUniversitySelect(
             document.getElementById('txtBoardGrad'),
             'Select University',
             preserveValues.txtBoardGrad || '',
         );
+        bindSchoolBoardOtherHandlers();
     }
 
     async function loadBoardsUniversities() {
@@ -1407,6 +1505,9 @@
             'txtBoard10', 'txtYear10', 'txtTotalMarks10', 'txtMarksObtained10',
             'txtBoard12', 'ddlStream12', 'txtYear12', 'txtTotalMarks12', 'txtMarksObtained12',
         ];
+        if (!validateSchoolBoardOtherFields()) {
+            return false;
+        }
         for (const id of required) {
             const f = document.getElementById(id);
             if (f && !f.value.trim() && f.offsetWidth > 0) {
@@ -1969,7 +2070,9 @@
                 el.value = strVal;
             };
             set('class-name', eduClassName(edu));
-            set('board', eduField(edu, 'Board', 'board'));
+            if (rowId !== 'row10th' && rowId !== 'row12th') {
+                set('board', eduField(edu, 'Board', 'board'));
+            }
             set('stream', eduField(edu, 'Stream', 'stream'));
             set('duration', eduField(edu, 'Duration', 'duration'));
             set('year', eduField(edu, 'Year', 'year'));
@@ -2018,7 +2121,9 @@
         const map = {
             txtName: data.FullName, txtFather: data.FatherName, txtMother: data.MotherName,
             ddlGender: data.Gender, ddlCategory: data.Category, txtNationality: data.Nationality,
-            ddlReligion: data.Religion, ddlMaritalStatus: data.MaritalStatus, ddlBloodGroup: data.BloodGroup,
+            ddlReligion: data.Religion,
+            ddlMaritalStatus: normalizeMaritalStatus(data.MaritalStatus),
+            ddlBloodGroup: data.BloodGroup,
             txtDOB: data.DOB, txtMobile: data.Mobile, txtEmail: data.Email, txtAadhaar: data.Aadhaar,
             txtApaar: data.Apaar, txtDisabilityDetails: data.DisabilityDetails,
             txtDisabilityPercentage: data.DisabilityPercentage, txtDisabilityType: data.DisabilityType,

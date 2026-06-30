@@ -423,6 +423,25 @@ def build_submit_payload(reg_no, data, generate_app_no):
     return payload, draft
 
 
+def get_program_display_name(admission) -> str:
+    """Program label for preview/print; appends B.Sc. subject group when selected."""
+    from courses.subject_groups import format_bsc_group_display_name, is_bsc_program
+
+    program = (getattr(admission, 'program_type', '') or '').strip()
+    if not program:
+        return '-'
+    if not is_bsc_program(program):
+        return program
+
+    _, group_key = parse_selected_subjects_payload(
+        getattr(admission, 'selected_subjects_json', None),
+    )
+    group_name = format_bsc_group_display_name(group_key, program)
+    if group_name:
+        return f'{program} - {group_name}'
+    return program
+
+
 def get_print_context(admission, student=None):
     """Build template context for print/PDF views."""
     if student is None and admission.reg_no:
@@ -441,6 +460,7 @@ def get_print_context(admission, student=None):
 
     return {
         'admission': display_admission,
+        'program_display': get_program_display_name(admission),
         'education': education,
         'selected_subjects': selected_subjects,
         'photo_src': _safe_image_src(admission.photo_base64),

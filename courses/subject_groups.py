@@ -241,6 +241,22 @@ def get_bsc_group_labels(program_type: str = '') -> dict[str, str]:
     return labels
 
 
+def format_bsc_group_display_name(group_key: str, program_type: str = '') -> str:
+    """Short label for preview/print, e.g. Bio Group A, Maths Group B."""
+    group = get_bsc_group_by_key(group_key, program_type)
+    if not group:
+        return ''
+
+    heading = (group.get('heading') or '').replace('B.Sc. ', '').strip()
+    label = (group.get('label') or '').strip()
+    if not heading and not label:
+        return ''
+    if label.startswith('Group ') and len(label) > 6:
+        suffix = label[6:].strip()
+        return f'{heading} {suffix}'.strip() if heading else label
+    return f'{heading} — {label}'.strip() if heading else label
+
+
 def department_in_group(department: str, group_key: str, program_type: str = '') -> bool:
     group = get_bsc_group_by_key(group_key, program_type)
     if not group:

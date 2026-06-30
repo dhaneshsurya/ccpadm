@@ -210,13 +210,18 @@ def student_dashboard(request):
         messages.error(request, 'Student record not found.')
         return redirect('login')
 
-    from admissions.services import get_editable_admission, get_printable_admission, parse_selected_subjects
+    from admissions.services import (
+        get_editable_admission,
+        get_printable_admission,
+        get_program_display_name,
+        parse_selected_subjects,
+    )
 
     admission = get_printable_admission(reg_no) or get_editable_admission(reg_no)
     selected_subjects = parse_selected_subjects(admission) if admission else []
     program_display = ''
     if admission and admission.program_type:
-        program_display = admission.program_type
+        program_display = get_program_display_name(admission)
     elif student.program_type:
         program_display = student.program_type
     else:

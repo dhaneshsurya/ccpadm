@@ -16,6 +16,7 @@ SCHOOL_BOARDS = [
     'Assam Higher Secondary Education Council (AHSEC)',
     'Bihar School Examination Board (BSEB)',
     'Chhattisgarh Board of Secondary Education (CGBSE)',
+    'Chhattishgarh Board Of Open School Raipur',
     'Goa Board of Secondary and Higher Secondary Education (GBSHSE)',
     'Gujarat Secondary and Higher Secondary Education Board (GSEB)',
     'Board of School Education Haryana (BSEH / HBSE)',

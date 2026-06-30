@@ -461,6 +461,14 @@
     min-width: 0;
 }
 
+.board-other-input {
+    margin-top: 6px;
+}
+
+.board-other-input[hidden] {
+    display: none;
+}
+
 .edu-row.hidden-row {
     display: none;
 }

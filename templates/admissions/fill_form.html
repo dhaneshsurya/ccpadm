@@ -72,7 +72,7 @@
                     </div>
                     <div class="field"><label>Marital Status</label>
                         <select id="ddlMaritalStatus" {% if form_disabled %}disabled{% endif %}>
-                            <option value="">Select</option><option>Single</option><option>Married</option>
+                            <option value="">Select</option><option>Married</option><option>Un-Married</option>
                         </select>
                     </div>
                     <div class="field"><label>Blood Group</label>
@@ -164,6 +164,9 @@
                             <select class="board" id="txtBoard10" required {% if form_disabled %}disabled{% endif %}>
                                 <option value="">Select Board</option>
                             </select>
+                            <input type="text" class="board-other-input" id="txtBoard10Other"
+                                   placeholder="Enter board name" maxlength="150" hidden
+                                   {% if form_disabled %}disabled{% endif %}>
                         </div>
                         <div class="edu-field">
                             <label>Stream</label>
@@ -205,6 +208,9 @@
                             <select class="board" id="txtBoard12" required {% if form_disabled %}disabled{% endif %}>
                                 <option value="">Select Board</option>
                             </select>
+                            <input type="text" class="board-other-input" id="txtBoard12Other"
+                                   placeholder="Enter board name" maxlength="150" hidden
+                                   {% if form_disabled %}disabled{% endif %}>
                         </div>
                         <div class="edu-field">
                             <label for="ddlStream12">Stream</label>
