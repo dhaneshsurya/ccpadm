@@ -1,5 +1,13 @@
 /* Admission wizard — form-specific styles (sidebar/layout from portal.css) */
 
+.layout-wrapper:has(.portal-page--form) {
+    max-width: 1560px;
+}
+
+.portal-page--form {
+    max-width: 100%;
+}
+
 .admission-main {
     min-width: 0;
 }
@@ -386,6 +394,16 @@
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+    .portal-page--form .edu-table {
+        overflow-x: visible;
+    }
+
+    .portal-page--form .edu-row {
+        grid-template-columns: 0.85fr 1.45fr 0.95fr 0.58fr 0.58fr 0.68fr 0.68fr 0.58fr 0.68fr 0.72fr;
+    }
 }
 
 .edu-head,
