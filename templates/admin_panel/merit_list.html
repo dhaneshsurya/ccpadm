@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Merit List{% endblock %}
+
+{% block content %}
+<div class="portal-page portal-page--wide">
+    <div class="portal-main">
+        <div class="page-header page-header--admin">
+            <h2 class="page-title"><i class="fas fa-list-ol"></i> Merit List — Program Wise</h2>
+            <nav class="page-actions page-actions--toolbar" aria-label="Admin navigation">
+                {% include 'partials/admin_nav_actions.html' with active_page='merit_list' %}
+                <a href="{% url 'export_merit_list_excel' %}?program={{ program_filter|urlencode }}&status={{ status_filter|urlencode }}"
+                   class="page-action-btn page-action-btn--accent">
+                    <i class="fas fa-file-excel" aria-hidden="true"></i><span>Export Excel</span>
+                </a>
+                <a href="{% url 'export_merit_list_csv' %}?program={{ program_filter|urlencode }}&status={{ status_filter|urlencode }}"
+                   class="page-action-btn">
+                    <i class="fas fa-file-csv" aria-hidden="true"></i><span>Export CSV</span>
+                </a>
+                {% include 'partials/admin_nav_logout.html' %}
+            </nav>
+        </div>
+
+        <form method="get" class="filter-bar">
+            <select name="program" class="portal-input" aria-label="Filter by program">
+                <option value="ALL">All Programs</option>
+                {% for pt in program_choices %}
+                <option value="{{ pt }}" {% if program_filter == pt %}selected{% endif %}>{{ pt }}</option>
+                {% endfor %}
+            </select>
+            <select name="status" class="portal-input" aria-label="Filter by application status">
+                {% for key, label in status_choices %}
+                <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+        </form>
+
+        <p class="field-hint" style="margin-bottom: var(--space-md);">
+            {{ total_applications }} application(s) across {{ groups|length }} program(s).
+            UG &amp; Diploma programs are ranked by <strong>12th %</strong>; PG programs by <strong>Graduation %</strong>.
+            Applicants without a percentage appear at the bottom.
+        </p>
+
+        {% if groups %}
+        <section class="verified-programs-panel merit-list-panel">
+            {% for group in groups %}
+            <div class="verified-program-block merit-program-block">
+                <h3 class="verified-program-block__title">
+                    {{ group.program }}
+                    <span class="badge badge-info">{{ group.program_level_display }}</span>
+                    <span class="badge badge-secondary">{{ group.count }} applicant{{ group.count|pluralize }}</span>
+                    <span class="merit-basis-badge" title="Sorting basis for this program">
+                        Sort: {{ group.merit_basis }} %
+                    </span>
+                </h3>
+                <div class="table-wrap">
+                    <table class="data-table merit-list-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>App No</th>
+                                <th>Name</th>
+                                <th>Father's Name</th>
+                                <th>Reg No</th>
+                                <th>12th %</th>
+                                <th>Grad %</th>
+                                <th>Merit %</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in group.rows %}
+                            {% with admission=row.admission entry=row.entry %}
+                            <tr>
+                                <td><strong>{{ row.rank }}</strong></td>
+                                <td>{{ admission.application_no|default:"—" }}</td>
+                                <td>{{ admission.full_name|default:"—" }}</td>
+                                <td>{{ admission.father_name|default:"—" }}</td>
+                                <td>{{ admission.reg_no|default:"—" }}</td>
+                                <td>
+                                    {% if entry.twelfth_percentage is not None %}
+                                    {{ entry.twelfth_percentage }}%
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entry.graduation_percentage is not None %}
+                                    {{ entry.graduation_percentage }}%
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="merit-pct-cell">
+                                    {% if entry.merit_percentage is not None %}
+                                    <strong>{{ entry.merit_percentage }}%</strong>
+                                    <small class="text-muted">({{ entry.merit_basis }})</small>
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge {% if admission.status == 'Submitted' %}badge-success{% elif admission.status == 'Approved' %}badge-info{% elif admission.status == 'Rejected' %}badge-danger{% else %}badge-warning{% endif %}">
+                                        {{ admission.status|default:"—" }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if admission.application_no %}
+                                    <a href="{% url 'admin_print_application' admission.application_no %}"
+                                       class="btn btn-secondary btn-sm"
+                                       target="_blank"
+                                       rel="noopener noreferrer">
+                                        <i class="fas fa-file-alt" aria-hidden="true"></i> View Form
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endwith %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+        </section>
+        {% else %}
+        <div class="empty-state">
+            <p>No applications match the selected filters.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

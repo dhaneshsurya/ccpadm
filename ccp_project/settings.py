@@ -23,9 +23,9 @@ from dotenv import load_dotenv
 
 from .ckeditor_config import CKEDITOR_5_CONFIGS
 
-load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / '.env')
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-h^52rm#acw))4_ja$k8k5#b5oforfv7&tok#+dpyrb-xvyhe%v')
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes')
@@ -110,13 +110,18 @@ MSSQL_CCPDB = os.getenv('MSSQL_CCPDB', 'ccpdb')
 MSSQL_COURSEDB = os.getenv('MSSQL_COURSEDB', 'courseinformation')
 MSSQL_TRUSTED_CONNECTION = os.getenv('MSSQL_TRUSTED_CONNECTION', 'yes').lower() in ('1', 'true', 'yes')
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_BACKEND = os.getenv(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.smtp.EmailBackend',
+)
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com').strip()
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '').strip()
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '').replace(' ', '')
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('1', 'true', 'yes')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False').lower() in ('1', 'true', 'yes')
+EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '30'))
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER).strip() or EMAIL_HOST_USER
 
 SESSION_COOKIE_AGE = 3600
 DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024

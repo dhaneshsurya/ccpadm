@@ -1479,6 +1479,11 @@ h3.college-title-main {
     color: #1e40af;
 }
 
+.badge-secondary {
+    background: #f1f5f9;
+    color: #475569;
+}
+
 /* ---- Stats (admin) ---- */
 .stat-grid {
     display: grid;
@@ -1514,6 +1519,90 @@ h3.college-title-main {
     color: var(--text-secondary);
     margin: 0;
     font-weight: 500;
+}
+
+.stat-card--link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+}
+
+.stat-card--link.is-active {
+    border-color: #93c5fd;
+    background: linear-gradient(145deg, #eff6ff, #fff);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12);
+}
+
+.stat-card__hint {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--ccp-blue);
+}
+
+.verified-programs-panel {
+    margin-bottom: var(--space-lg);
+    padding: var(--space-md);
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-lg);
+}
+
+.verified-programs-panel__header {
+    margin-bottom: var(--space-md);
+}
+
+.verified-programs-panel__header .section-title {
+    margin-bottom: 4px;
+}
+
+.verified-program-block + .verified-program-block {
+    margin-top: var(--space-md);
+}
+
+.verified-program-block__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 var(--space-sm);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.merit-list-panel {
+    margin-top: var(--space-sm);
+}
+
+.merit-program-block + .merit-program-block {
+    padding-top: var(--space-md);
+    border-top: 1px solid #e2e8f0;
+}
+
+.merit-basis-badge {
+    margin-left: auto;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: #eef2ff;
+    color: #3730a3;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.merit-pct-cell strong {
+    color: var(--ccp-blue);
+}
+
+.empty-state {
+    padding: var(--space-lg);
+    text-align: center;
+    color: var(--text-muted);
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: var(--radius-lg);
 }
 
 /* ---- Tables ---- */

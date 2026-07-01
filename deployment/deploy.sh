@@ -14,6 +14,12 @@ echo "=========================================="
 
 cd "$PROJECT_DIR"
 
+if [ ! -f "$PROJECT_DIR/.env" ]; then
+    echo "WARNING: $PROJECT_DIR/.env is missing."
+    echo "         OTP / registration emails will fail until you create .env from .env.example"
+    echo "         and set EMAIL_HOST_USER + EMAIL_HOST_PASSWORD (Gmail App Password)."
+fi
+
 # Pull latest changes (make sure you have set up git credentials or ssh keys on EC2)
 echo "1. Pulling latest code from git..."
 git pull
@@ -42,11 +48,18 @@ echo "4. Running database migrations..."
 echo "5. Collecting static files..."
 "$PYTHON_BIN" manage.py collectstatic --noinput
 
+echo "5b. Checking email configuration..."
+"$PYTHON_BIN" manage.py check_email_config || true
+
+echo "6. Updating Gunicorn service..."
+sudo cp "$PROJECT_DIR/deployment/gunicorn.service" /etc/systemd/system/gunicorn.service
+sudo systemctl daemon-reload
+
 # Restart systemd services to pick up changes
-echo "6. Restarting Gunicorn..."
+echo "7. Restarting Gunicorn..."
 sudo systemctl restart gunicorn
 
-echo "7. Restarting Nginx..."
+echo "8. Restarting Nginx..."
 sudo systemctl restart nginx
 
 echo "=========================================="

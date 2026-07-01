@@ -64,8 +64,12 @@ def generate_otp():
     return str(secrets.randbelow(900000) + 100000)
 
 
+def is_email_configured():
+    return bool(settings.EMAIL_HOST_USER and settings.EMAIL_HOST_PASSWORD)
+
+
 def send_registration_email(email, name, reg_no, password):
-    if not email or not settings.EMAIL_HOST_USER:
+    if not email or not is_email_configured():
         return
     body = (
         f'Hello {name},\n\n'
@@ -90,11 +94,14 @@ def send_otp_email(email, otp):
     subject = 'Password Reset OTP - Chaitanya College'
     body = f'Your OTP is: {otp}\nValid for 10 minutes.'
 
-    if not settings.EMAIL_HOST_USER:
+    if not is_email_configured():
         if settings.DEBUG:
             logger.warning('EMAIL not configured. OTP for %s: %s', email, otp)
             return True
-        logger.error('EMAIL_HOST_USER is not configured; cannot send OTP to %s', email)
+        logger.error(
+            'Email SMTP is not configured (EMAIL_HOST_USER / EMAIL_HOST_PASSWORD); cannot send OTP to %s',
+            email,
+        )
         return False
 
     try:

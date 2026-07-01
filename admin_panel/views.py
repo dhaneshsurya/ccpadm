@@ -20,12 +20,30 @@ from admissions.models import StudentAdmission
 from admissions.services import get_print_context, parse_selected_subjects
 from courses.utils import get_program_names
 
+from .merit_list import (
+    MERIT_EXPORT_HEADERS,
+    STATUS_FILTER_CHOICES,
+    build_merit_list_groups,
+    build_merit_list_workbook,
+    get_merit_program_choices,
+    iter_merit_export_rows,
+    merit_export_filename,
+)
+
 
 def _students_filter_params(request):
+    """Read list filters from POST (actions) or GET (page load / filter form)."""
+    if request.method == 'POST':
+        source = request.POST
+    else:
+        source = request.GET
+
+    program = (source.get('program') or 'ALL').strip() or 'ALL'
+    verified = (source.get('verified') or 'ALL').strip() or 'ALL'
     return {
-        'search': request.GET.get('search', '').strip() or request.POST.get('search', '').strip(),
-        'program': request.GET.get('program', 'ALL').strip() or request.POST.get('program', 'ALL').strip(),
-        'verified': request.GET.get('verified', 'ALL').strip() or request.POST.get('verified', 'ALL').strip(),
+        'search': source.get('search', '').strip(),
+        'program': program,
+        'verified': verified,
     }
 
 
@@ -110,6 +128,36 @@ def _attach_admissions(students):
     for student in students:
         student.latest_admission = admission_map.get(student.registration_no)
     return students
+
+
+def _program_group_label(program_type):
+    label = (program_type or '').strip()
+    return label or 'Not Assigned'
+
+
+def _build_verified_students_by_program():
+    """Group verified students by program (class) for admin dashboard."""
+    verified = list(
+        Student.objects.filter(is_verified=True).order_by('program_type', 'full_name', 'registration_no')
+    )
+    _attach_admissions(verified)
+
+    groups = {}
+    for student in verified:
+        program = _program_group_label(student.program_type)
+        groups.setdefault(program, []).append(student)
+
+    return [
+        {
+            'program': program,
+            'count': len(students),
+            'students': students,
+        }
+        for program, students in sorted(
+            groups.items(),
+            key=lambda item: (item[0] == 'Not Assigned', item[0].lower()),
+        )
+    ]
 
 
 _REJECTABLE_ADMISSION_STATUSES = ('Submitted', 'Pending', 'Approved')
@@ -200,6 +248,8 @@ def admin_logout(request):
 
 @admin_login_required
 def admin_dashboard(request):
+    show_verified = request.GET.get('show_verified') == '1'
+    verified_students = Student.objects.filter(is_verified=True).count()
     stats = {
         'total_admissions': StudentAdmission.objects.count(),
         'pending': StudentAdmission.objects.filter(status='Pending').count(),
@@ -207,9 +257,15 @@ def admin_dashboard(request):
         'rejected': StudentAdmission.objects.filter(status='Rejected').count(),
         'submitted': StudentAdmission.objects.filter(status='Submitted').count(),
         'students': Student.objects.count(),
+        'verified_students': verified_students,
     }
     recent = StudentAdmission.objects.order_by('-submitted_date', '-created_date')[:20]
-    return render(request, 'admin_panel/dashboard.html', {'stats': stats, 'recent': recent})
+    return render(request, 'admin_panel/dashboard.html', {
+        'stats': stats,
+        'recent': recent,
+        'show_verified': show_verified,
+        'verified_by_program': _build_verified_students_by_program() if show_verified else [],
+    })
 
 
 @admin_login_required
@@ -427,6 +483,69 @@ def bulk_student_action(request):
             messages.error(request, 'No students were deleted.')
 
     return redirect(_students_url(params))
+
+
+def _merit_list_params(request):
+    program = request.GET.get('program', 'ALL').strip() or 'ALL'
+    status = request.GET.get('status', 'applied').strip() or 'applied'
+    valid_statuses = {key for key, _ in STATUS_FILTER_CHOICES}
+    if status not in valid_statuses:
+        status = 'applied'
+    return {'program': program, 'status': status}
+
+
+@admin_login_required
+def merit_list(request):
+    params = _merit_list_params(request)
+    program_filter = params['program']
+    status_filter = params['status']
+    groups = build_merit_list_groups(program_filter, status_filter)
+    total_applications = sum(group['count'] for group in groups)
+
+    return render(request, 'admin_panel/merit_list.html', {
+        'groups': groups,
+        'program_filter': program_filter,
+        'status_filter': status_filter,
+        'program_choices': get_merit_program_choices(status_filter),
+        'status_choices': STATUS_FILTER_CHOICES,
+        'total_applications': total_applications,
+    })
+
+
+@admin_login_required
+def export_merit_list_csv(request):
+    params = _merit_list_params(request)
+    groups = build_merit_list_groups(params['program'], params['status'])
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = (
+        f'attachment; filename="{merit_export_filename(params["program"], "csv")}"'
+    )
+    writer = csv.writer(response)
+    writer.writerow(MERIT_EXPORT_HEADERS)
+    for row in iter_merit_export_rows(groups):
+        writer.writerow(row)
+    return response
+
+
+@admin_login_required
+def export_merit_list_excel(request):
+    params = _merit_list_params(request)
+    groups = build_merit_list_groups(params['program'], params['status'])
+    workbook = build_merit_list_workbook(
+        groups,
+        program_filter=params['program'],
+        status_filter=params['status'],
+    )
+
+    response = HttpResponse(
+        workbook.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = (
+        f'attachment; filename="{merit_export_filename(params["program"], "xlsx")}"'
+    )
+    return response
 
 
 @admin_login_required

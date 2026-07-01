@@ -38,7 +38,93 @@
                 <h3>{{ stats.students }}</h3>
                 <p>Students</p>
             </div>
+            <a href="{% if show_verified %}{% url 'admin_dashboard' %}{% else %}{% url 'admin_dashboard' %}?show_verified=1#verified-students{% endif %}"
+               class="stat-card stat-card--link{% if show_verified %} is-active{% endif %}"
+               title="{% if show_verified %}Hide verified students by program{% else %}View verified students by program{% endif %}">
+                <h3>{{ stats.verified_students }}</h3>
+                <p>Verified Students</p>
+                <span class="stat-card__hint">{% if show_verified %}Click to hide{% else %}Click for details{% endif %}</span>
+            </a>
         </div>
+
+        {% if show_verified %}
+        <section class="verified-programs-panel" id="verified-students">
+            <div class="verified-programs-panel__header">
+                <h3 class="section-title">Verified Students — Program Wise</h3>
+                <p class="field-hint">{{ stats.verified_students }} verified student(s) across {{ verified_by_program|length }} program(s)</p>
+            </div>
+
+            {% if verified_by_program %}
+            {% for group in verified_by_program %}
+            <div class="verified-program-block">
+                <h4 class="verified-program-block__title">
+                    {{ group.program }}
+                    <span class="badge badge-info">{{ group.count }}</span>
+                </h4>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Reg No</th>
+                                <th>Name</th>
+                                <th>Contact</th>
+                                <th>Course</th>
+                                <th>Application</th>
+                                <th>Registered</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in group.students %}
+                            <tr>
+                                <td><strong>{{ s.registration_no }}</strong></td>
+                                <td>{{ s.full_name }}</td>
+                                <td>
+                                    <div>{{ s.email|default:"—" }}</div>
+                                    <small class="text-muted">{{ s.mobile|default:"—" }}</small>
+                                </td>
+                                <td>{{ s.course_name|default:"—" }}</td>
+                                <td>
+                                    {% if s.latest_admission %}
+                                    <span class="badge {% if s.latest_admission.status == 'Submitted' %}badge-success{% elif s.latest_admission.status == 'Approved' %}badge-info{% elif s.latest_admission.status == 'Rejected' %}badge-danger{% else %}badge-warning{% endif %}">
+                                        {{ s.latest_admission.status }}
+                                    </span>
+                                    {% if s.latest_admission.application_no %}
+                                    <div><small>{{ s.latest_admission.application_no }}</small></div>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">No application</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if s.created_date %}
+                                    {{ s.created_date|date:"d M Y" }}
+                                    {% else %}
+                                    —
+                                    {% endif %}
+                                </td>
+                                <td class="action-cell">
+                                    {% if s.latest_admission and s.latest_admission.application_no %}
+                                    <a href="{% url 'admin_print_application' s.latest_admission.application_no %}" target="_blank"
+                                       class="btn btn-sm btn-secondary" title="View application form">
+                                        <i class="fas fa-file-alt"></i> View Form
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="text-muted">No verified students yet.</p>
+            {% endif %}
+        </section>
+        {% endif %}
 
         <h3 class="section-title">Recent Applications</h3>
 
