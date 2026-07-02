@@ -1934,15 +1934,43 @@ h3.college-title-main {
     padding-right: 8px;
 }
 
-.data-table--students .col-reg { width: 7%; }
-.data-table--students .col-name { width: 9%; }
-.data-table--students .col-father { width: 9%; }
-.data-table--students .col-contact { width: 12%; }
-.data-table--students .col-program { width: 12%; }
-.data-table--students .col-admission { width: 10%; }
+.data-table--students .col-reg {
+    width: 9%;
+    min-width: 108px;
+}
+
+.data-table--students .col-name { width: 8%; }
+.data-table--students .col-father { width: 8%; }
+.data-table--students .col-contact {
+    width: 15%;
+    min-width: 168px;
+}
+.data-table--students .col-program { width: 11%; }
+.data-table--students .col-admission {
+    width: 10%;
+    min-width: 108px;
+}
 .data-table--students .col-password { width: 7%; }
 .data-table--students .col-verified { width: 6%; }
-.data-table--students .col-actions { width: 18%; }
+.data-table--students .col-actions {
+    width: 15%;
+    min-width: 148px;
+}
+
+.data-table--students .cell-exact {
+    display: inline-block;
+    white-space: nowrap;
+    word-break: normal;
+    overflow: visible;
+    text-overflow: unset;
+}
+
+.data-table--students .cell-exact--mono {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
 
 .data-table--students .cell-clip {
     display: block;
@@ -1952,15 +1980,20 @@ h3.college-title-main {
     white-space: nowrap;
 }
 
-.data-table--students .cell-clip--contact,
-.data-table--students .cell-clip--mono {
-    font-size: 0.76rem;
+.data-table--students .cell-email {
+    display: block;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    line-height: 1.4;
+    font-size: 0.78rem;
 }
 
-.data-table--students .col-contact small {
+.data-table--students .cell-mobile {
     display: block;
-    margin-top: 2px;
+    margin-top: 3px;
     font-size: 0.74rem;
+    white-space: nowrap;
 }
 
 .data-table--students .col-admission .badge--compact {
@@ -1988,27 +2021,53 @@ h3.college-title-main {
     white-space: nowrap;
 }
 
-.data-table--students .action-cell--compact {
-    gap: 4px;
-    row-gap: 4px;
+.data-table--students .action-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 132px;
 }
 
-.data-table--students .action-cell--compact .btn-sm {
-    padding: 4px 6px;
+.data-table--students .action-grid__icons {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, max-content));
+    gap: 4px;
+    align-items: center;
+    justify-content: start;
+}
+
+.data-table--students .action-grid__icons .inline-form {
+    display: contents;
+}
+
+.data-table--students .action-grid__icons .btn-sm {
+    padding: 4px 7px;
     font-size: 0.72rem;
     line-height: 1.2;
+    min-width: 30px;
+    text-align: center;
 }
 
-.data-table--students .action-cell--compact .portal-input--compact {
-    min-width: 96px;
-    max-width: 108px;
-    padding: 4px 6px;
+.data-table--students .action-grid__select {
+    width: 100%;
+}
+
+.data-table--students .action-grid__select-form {
+    display: block;
+    width: 100%;
+}
+
+.data-table--students .action-grid__select .portal-input--full {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    padding: 4px 8px;
     font-size: 0.72rem;
 }
 
 @media (max-width: 1200px) {
     .data-table--students {
-        min-width: 980px;
+        min-width: 1040px;
     }
 }
 
