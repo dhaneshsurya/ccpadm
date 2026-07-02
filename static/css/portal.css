@@ -546,7 +546,8 @@ h3.college-title-main {
 
 /* Wide admin tables (e.g. students list) — use full main width, no inner scroll */
 .layout-wrapper:has(.portal-page--wide) {
-    max-width: 1440px;
+    max-width: min(1440px, 100%);
+    overflow-x: hidden;
 }
 
 .portal-page--wide {
@@ -555,12 +556,8 @@ h3.college-title-main {
 
 .portal-page--wide .portal-main {
     width: 100%;
-}
-
-@media (min-width: 1024px) {
-    .portal-page--wide .table-wrap {
-        overflow-x: visible;
-    }
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 .portal-layout {
@@ -1902,6 +1899,117 @@ h3.college-title-main {
     font-weight: 600;
     color: #0f172a;
     letter-spacing: 0.04em;
+}
+
+/* ---- Students admin table (compact, contained width) ---- */
+.table-wrap--students {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+}
+
+.data-table--students {
+    table-layout: fixed;
+    width: 100%;
+    min-width: 0;
+    font-size: 0.8rem;
+}
+
+.data-table--students th {
+    padding: 8px 10px;
+    font-size: 0.68rem;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+.data-table--students td {
+    padding: 8px 10px;
+    vertical-align: middle;
+    min-width: 0;
+}
+
+.data-table--students .col-select {
+    width: 34px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.data-table--students .col-reg { width: 7%; }
+.data-table--students .col-name { width: 9%; }
+.data-table--students .col-father { width: 9%; }
+.data-table--students .col-contact { width: 12%; }
+.data-table--students .col-program { width: 12%; }
+.data-table--students .col-admission { width: 10%; }
+.data-table--students .col-password { width: 7%; }
+.data-table--students .col-verified { width: 6%; }
+.data-table--students .col-actions { width: 18%; }
+
+.data-table--students .cell-clip {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.data-table--students .cell-clip--contact,
+.data-table--students .cell-clip--mono {
+    font-size: 0.76rem;
+}
+
+.data-table--students .col-contact small {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.74rem;
+}
+
+.data-table--students .col-admission .badge--compact {
+    display: inline-block;
+    margin-bottom: 2px;
+    padding: 2px 6px;
+    font-size: 0.62rem;
+    letter-spacing: 0.02em;
+}
+
+.data-table--students .col-admission small {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.data-table--students .password-cell .student-password {
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.data-table--students .col-verified .btn-sm {
+    padding: 3px 6px;
+    font-size: 0.72rem;
+    white-space: nowrap;
+}
+
+.data-table--students .action-cell--compact {
+    gap: 4px;
+    row-gap: 4px;
+}
+
+.data-table--students .action-cell--compact .btn-sm {
+    padding: 4px 6px;
+    font-size: 0.72rem;
+    line-height: 1.2;
+}
+
+.data-table--students .action-cell--compact .portal-input--compact {
+    min-width: 96px;
+    max-width: 108px;
+    padding: 4px 6px;
+    font-size: 0.72rem;
+}
+
+@media (max-width: 1200px) {
+    .data-table--students {
+        min-width: 980px;
+    }
 }
 
 /* ---- Action row ---- */

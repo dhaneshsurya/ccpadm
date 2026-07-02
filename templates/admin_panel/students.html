@@ -53,8 +53,8 @@
             </button>
         </form>
 
-        <div class="table-wrap">
-            <table class="data-table" id="studentsTable">
+        <div class="table-wrap table-wrap--students">
+            <table class="data-table data-table--students" id="studentsTable">
                 <thead>
                     <tr>
                         <th class="col-select">
@@ -62,15 +62,15 @@
                                 <input type="checkbox" id="selectAllRows" aria-label="Select all students">
                             </label>
                         </th>
-                        <th>Reg No</th>
-                        <th>Name</th>
-                        <th>Father's Name</th>
-                        <th>Contact</th>
-                        <th>Program</th>
-                        <th>Admission</th>
-                        <th>Password</th>
-                        <th>Verified</th>
-                        <th>Actions</th>
+                        <th class="col-reg">Reg No</th>
+                        <th class="col-name">Name</th>
+                        <th class="col-father">Father</th>
+                        <th class="col-contact">Contact</th>
+                        <th class="col-program">Program</th>
+                        <th class="col-admission">Admission</th>
+                        <th class="col-password">Password</th>
+                        <th class="col-verified">Verified</th>
+                        <th class="col-actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -81,39 +81,39 @@
                                 <input type="checkbox" class="row-select" value="{{ s.pk }}" aria-label="Select {{ s.full_name }}">
                             </label>
                         </td>
-                        <td><strong>{{ s.registration_no }}</strong></td>
-                        <td>{{ s.full_name }}</td>
-                        <td>
+                        <td class="col-reg"><span class="cell-clip" title="{{ s.registration_no }}"><strong>{{ s.registration_no }}</strong></span></td>
+                        <td class="col-name"><span class="cell-clip" title="{{ s.full_name }}">{{ s.full_name }}</span></td>
+                        <td class="col-father">
                             {% if s.latest_admission and s.latest_admission.father_name %}
-                            {{ s.latest_admission.father_name }}
+                            <span class="cell-clip" title="{{ s.latest_admission.father_name }}">{{ s.latest_admission.father_name }}</span>
                             {% else %}
                             <span class="text-muted">—</span>
                             {% endif %}
                         </td>
-                        <td>
-                            <div>{{ s.email|default:"—" }}</div>
-                            <small class="text-muted">{{ s.mobile|default:"—" }}</small>
+                        <td class="col-contact">
+                            <span class="cell-clip cell-clip--contact" title="{{ s.email|default:'—' }}">{{ s.email|default:"—" }}</span>
+                            <small class="text-muted cell-clip cell-clip--contact" title="{{ s.mobile|default:'—' }}">{{ s.mobile|default:"—" }}</small>
                         </td>
-                        <td>
-                            <div>{{ s.program_type|default:"—" }}</div>
-                            {% if s.course_name %}<small class="text-muted">{{ s.course_name }}</small>{% endif %}
+                        <td class="col-program">
+                            <span class="cell-clip" title="{{ s.program_type|default:'—' }}">{{ s.program_type|default:"—" }}</span>
+                            {% if s.course_name %}<small class="text-muted cell-clip" title="{{ s.course_name }}">{{ s.course_name }}</small>{% endif %}
                         </td>
-                        <td>
+                        <td class="col-admission">
                             {% if s.latest_admission %}
-                            <span class="badge {% if s.latest_admission.status == 'Submitted' %}badge-success{% elif s.latest_admission.status == 'Approved' %}badge-info{% elif s.latest_admission.status == 'Rejected' %}badge-danger{% else %}badge-warning{% endif %}">
+                            <span class="badge badge--compact {% if s.latest_admission.status == 'Submitted' %}badge-success{% elif s.latest_admission.status == 'Approved' %}badge-info{% elif s.latest_admission.status == 'Rejected' %}badge-danger{% else %}badge-warning{% endif %}">
                                 {{ s.latest_admission.status }}
                             </span>
                             {% if s.latest_admission.application_no %}
-                            <div><small>{{ s.latest_admission.application_no }}</small></div>
+                            <small class="cell-clip cell-clip--mono" title="{{ s.latest_admission.application_no }}">{{ s.latest_admission.application_no }}</small>
                             {% endif %}
                             {% else %}
                             <span class="text-muted">No application</span>
                             {% endif %}
                         </td>
-                        <td class="password-cell">
-                            <span class="student-password" id="password-{{ s.pk }}">{{ s.password }}</span>
+                        <td class="password-cell col-password">
+                            <span class="student-password cell-clip cell-clip--mono" id="password-{{ s.pk }}" title="{{ s.password }}">{{ s.password }}</span>
                         </td>
-                        <td>
+                        <td class="col-verified">
                             <form method="post" action="{% url 'toggle_student_verified' s.pk %}" class="inline-form">
                                 {% csrf_token %}
                                 <input type="hidden" name="search" value="{{ search }}">
@@ -124,7 +124,7 @@
                                 </button>
                             </form>
                         </td>
-                        <td class="action-cell">
+                        <td class="action-cell action-cell--compact col-actions">
                             <a href="{% url 'manage_students' %}?edit={{ s.pk }}&search={{ search }}&program={{ program_filter }}&verified={{ verified_filter }}"
                                class="btn btn-sm btn-secondary" title="Edit student">
                                 <i class="fas fa-edit"></i>
