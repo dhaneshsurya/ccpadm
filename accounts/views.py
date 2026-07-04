@@ -1,6 +1,9 @@
 import json
+import logging
 import re
 from datetime import timedelta
+
+logger = logging.getLogger(__name__)
 
 from django.contrib import messages
 from django.db.models import Q
@@ -270,10 +273,14 @@ def _send_password_reset_otp(request, email):
         otp_hash=hash_otp(otp),
         expiry_at=timezone.now() + timedelta(minutes=10),
     )
-    sent = send_otp_email(email, otp)
+    sent, reason = send_otp_email(email, otp)
     if sent:
         request.session['reset_email'] = email
         request.session['reset_step'] = 'verify'
+    elif reason == 'smtp_error':
+        logger.error('Password reset OTP SMTP failure for %s', email)
+    elif reason == 'not_configured':
+        logger.error('Password reset OTP skipped: EMAIL_HOST_USER/PASSWORD not set in .env')
     return sent
 
 

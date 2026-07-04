@@ -88,8 +88,9 @@ def send_registration_email(email, name, reg_no, password):
 
 
 def send_otp_email(email, otp):
+    """Send OTP email. Returns (success, failure_reason)."""
     if not email:
-        return False
+        return False, 'missing_email'
 
     subject = 'Password Reset OTP - Chaitanya College'
     body = f'Your OTP is: {otp}\nValid for 10 minutes.'
@@ -97,12 +98,12 @@ def send_otp_email(email, otp):
     if not is_email_configured():
         if settings.DEBUG:
             logger.warning('EMAIL not configured. OTP for %s: %s', email, otp)
-            return True
+            return True, 'debug_fallback'
         logger.error(
             'Email SMTP is not configured (EMAIL_HOST_USER / EMAIL_HOST_PASSWORD); cannot send OTP to %s',
             email,
         )
-        return False
+        return False, 'not_configured'
 
     try:
         send_mail(
@@ -112,10 +113,10 @@ def send_otp_email(email, otp):
             [email],
             fail_silently=False,
         )
-        return True
+        return True, 'sent'
     except Exception:
         logger.exception('Failed to send OTP email to %s', email)
-        return False
+        return False, 'smtp_error'
 
 
 def mask_aadhaar(aadhaar):
