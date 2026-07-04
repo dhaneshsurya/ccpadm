@@ -3,6 +3,7 @@ import logging
 import random
 import re
 import secrets
+import smtplib
 from datetime import timedelta
 
 from django.core.mail import send_mail
@@ -68,6 +69,26 @@ def is_email_configured():
     return bool(settings.EMAIL_HOST_USER and settings.EMAIL_HOST_PASSWORD)
 
 
+def classify_smtp_failure(exc: Exception) -> str:
+    """Map SMTP exceptions to stable failure codes for user messaging."""
+    raw = exc
+    if hasattr(exc, 'smtp_error'):
+        smtp_error = exc.smtp_error
+        if isinstance(smtp_error, bytes):
+            raw = smtp_error.decode('utf-8', errors='replace')
+        else:
+            raw = str(smtp_error)
+    text = f'{exc} {raw}'.lower()
+
+    if 'daily user sending limit' in text or 'sending limit exceeded' in text:
+        return 'daily_limit'
+    if 'username and password not accepted' in text or 'authentication failed' in text:
+        return 'auth_error'
+    if 'connection refused' in text or 'timed out' in text or 'network is unreachable' in text:
+        return 'connection_error'
+    return 'smtp_error'
+
+
 def send_registration_email(email, name, reg_no, password):
     if not email or not is_email_configured():
         return
@@ -114,6 +135,10 @@ def send_otp_email(email, otp):
             fail_silently=False,
         )
         return True, 'sent'
+    except (smtplib.SMTPException, OSError) as exc:
+        reason = classify_smtp_failure(exc)
+        logger.error('Failed to send OTP email to %s (%s): %s', email, reason, exc)
+        return False, reason
     except Exception:
         logger.exception('Failed to send OTP email to %s', email)
         return False, 'smtp_error'

@@ -1,9 +1,6 @@
 import json
-import logging
 import re
 from datetime import timedelta
-
-logger = logging.getLogger(__name__)
 
 from django.contrib import messages
 from django.db.models import Q
@@ -266,6 +263,30 @@ def _forgot_password_redirect(step='find'):
     return redirect(f'{reverse("forgot_password")}?step={step}')
 
 
+def _otp_failure_message(reason):
+    messages_by_reason = {
+        'not_configured': (
+            'Could not send OTP email. Email service is not configured correctly. '
+            'Please contact the college office.'
+        ),
+        'daily_limit': (
+            'The college email account has reached its daily sending limit. '
+            'Please try again after 24 hours or contact the college office.'
+        ),
+        'auth_error': (
+            'Could not send OTP email because the college email login failed. '
+            'Please contact the college office.'
+        ),
+        'connection_error': (
+            'Could not reach the email server right now. Please try again later.'
+        ),
+    }
+    return messages_by_reason.get(
+        reason,
+        'Could not send OTP email right now. Please try again later or contact the college office.',
+    )
+
+
 def _send_password_reset_otp(request, email):
     otp = generate_otp()
     PasswordResetOTP.objects.create(
@@ -277,11 +298,8 @@ def _send_password_reset_otp(request, email):
     if sent:
         request.session['reset_email'] = email
         request.session['reset_step'] = 'verify'
-    elif reason == 'smtp_error':
-        logger.error('Password reset OTP SMTP failure for %s', email)
-    elif reason == 'not_configured':
-        logger.error('Password reset OTP skipped: EMAIL_HOST_USER/PASSWORD not set in .env')
-    return sent
+        return True, reason
+    return False, reason
 
 
 @require_http_methods(['GET', 'POST'])
@@ -319,17 +337,14 @@ def forgot_password(request):
 
             student = Student.objects.filter(email__iexact=email).first()
             if student:
-                if _send_password_reset_otp(request, student.email):
+                sent, reason = _send_password_reset_otp(request, student.email)
+                if sent:
                     messages.success(
                         request,
                         'OTP has been sent to your registered email. Check your inbox.',
                     )
                     return _forgot_password_redirect('verify')
-                messages.error(
-                    request,
-                    'Could not send OTP email. Email service is not configured correctly. '
-                    'Please contact the college office.',
-                )
+                messages.error(request, _otp_failure_message(reason))
                 return _forgot_password_redirect()
             messages.error(
                 request,
@@ -341,10 +356,11 @@ def forgot_password(request):
             email = request.session.get('reset_email')
             if not email:
                 return _forgot_password_redirect()
-            if _send_password_reset_otp(request, email):
+            sent, reason = _send_password_reset_otp(request, email)
+            if sent:
                 messages.info(request, 'A new OTP has been sent to your registered email.')
                 return _forgot_password_redirect('verify')
-            messages.error(request, 'Could not resend OTP. Email service is not configured correctly.')
+            messages.error(request, _otp_failure_message(reason))
             return _forgot_password_redirect()
 
         if action == 'verify_otp':
