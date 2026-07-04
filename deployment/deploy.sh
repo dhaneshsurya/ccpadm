@@ -20,7 +20,7 @@ cd "$PROJECT_DIR"
 if [ ! -f "$PROJECT_DIR/.env" ]; then
     echo "WARNING: $PROJECT_DIR/.env is missing."
     echo "         OTP / registration emails will fail until you create .env from .env.example"
-    echo "         and set EMAIL_HOST_USER + EMAIL_HOST_PASSWORD (Gmail App Password)."
+    echo "         For production use USE_SES=True + DEFAULT_FROM_EMAIL (Amazon SES)."
 fi
 
 ensure_python_prereqs() {

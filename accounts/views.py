@@ -277,6 +277,14 @@ def _otp_failure_message(reason):
             'Could not send OTP email because the college email login failed. '
             'Please contact the college office.'
         ),
+        'ses_not_verified': (
+            'Could not send OTP because the email address is not verified with the mail service. '
+            'Please contact the college office.'
+        ),
+        'ses_permission': (
+            'Could not send OTP because the server is not allowed to send email. '
+            'Please contact the college office.'
+        ),
         'connection_error': (
             'Could not reach the email server right now. Please try again later.'
         ),

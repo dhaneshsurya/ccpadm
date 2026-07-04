@@ -3,12 +3,13 @@ import logging
 import random
 import re
 import secrets
-import smtplib
 from datetime import timedelta
 
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
+
+from .email_config import classify_email_failure, is_email_configured
 
 logger = logging.getLogger(__name__)
 
@@ -65,30 +66,6 @@ def generate_otp():
     return str(secrets.randbelow(900000) + 100000)
 
 
-def is_email_configured():
-    return bool(settings.EMAIL_HOST_USER and settings.EMAIL_HOST_PASSWORD)
-
-
-def classify_smtp_failure(exc: Exception) -> str:
-    """Map SMTP exceptions to stable failure codes for user messaging."""
-    raw = exc
-    if hasattr(exc, 'smtp_error'):
-        smtp_error = exc.smtp_error
-        if isinstance(smtp_error, bytes):
-            raw = smtp_error.decode('utf-8', errors='replace')
-        else:
-            raw = str(smtp_error)
-    text = f'{exc} {raw}'.lower()
-
-    if 'daily user sending limit' in text or 'sending limit exceeded' in text:
-        return 'daily_limit'
-    if 'username and password not accepted' in text or 'authentication failed' in text:
-        return 'auth_error'
-    if 'connection refused' in text or 'timed out' in text or 'network is unreachable' in text:
-        return 'connection_error'
-    return 'smtp_error'
-
-
 def send_registration_email(email, name, reg_no, password):
     if not email or not is_email_configured():
         return
@@ -121,7 +98,7 @@ def send_otp_email(email, otp):
             logger.warning('EMAIL not configured. OTP for %s: %s', email, otp)
             return True, 'debug_fallback'
         logger.error(
-            'Email SMTP is not configured (EMAIL_HOST_USER / EMAIL_HOST_PASSWORD); cannot send OTP to %s',
+            'Email is not configured (SES DEFAULT_FROM_EMAIL or SMTP credentials); cannot send OTP to %s',
             email,
         )
         return False, 'not_configured'
@@ -135,13 +112,10 @@ def send_otp_email(email, otp):
             fail_silently=False,
         )
         return True, 'sent'
-    except (smtplib.SMTPException, OSError) as exc:
-        reason = classify_smtp_failure(exc)
+    except Exception as exc:
+        reason = classify_email_failure(exc)
         logger.error('Failed to send OTP email to %s (%s): %s', email, reason, exc)
         return False, reason
-    except Exception:
-        logger.exception('Failed to send OTP email to %s', email)
-        return False, 'smtp_error'
 
 
 def mask_aadhaar(aadhaar):

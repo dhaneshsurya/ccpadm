@@ -110,18 +110,37 @@ MSSQL_CCPDB = os.getenv('MSSQL_CCPDB', 'ccpdb')
 MSSQL_COURSEDB = os.getenv('MSSQL_COURSEDB', 'courseinformation')
 MSSQL_TRUSTED_CONNECTION = os.getenv('MSSQL_TRUSTED_CONNECTION', 'yes').lower() in ('1', 'true', 'yes')
 
-EMAIL_BACKEND = os.getenv(
-    'EMAIL_BACKEND',
-    'django.core.mail.backends.smtp.EmailBackend',
-)
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com').strip()
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '').strip()
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '').replace(' ', '')
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('1', 'true', 'yes')
-EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False').lower() in ('1', 'true', 'yes')
-EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '30'))
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER).strip() or EMAIL_HOST_USER
+USE_SES = os.getenv('USE_SES', 'False').lower() in ('1', 'true', 'yes')
+
+if USE_SES:
+    EMAIL_BACKEND = 'django_ses.SESBackend'
+    AWS_SES_REGION_NAME = os.getenv('AWS_SES_REGION_NAME', 'ap-south-1').strip() or 'ap-south-1'
+    _aws_access_key = os.getenv('AWS_ACCESS_KEY_ID', '').strip()
+    _aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY', '').strip()
+    if _aws_access_key and _aws_secret_key:
+        AWS_ACCESS_KEY_ID = _aws_access_key
+        AWS_SECRET_ACCESS_KEY = _aws_secret_key
+    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', '').strip()
+    EMAIL_HOST = ''
+    EMAIL_PORT = 587
+    EMAIL_HOST_USER = ''
+    EMAIL_HOST_PASSWORD = ''
+    EMAIL_USE_TLS = True
+    EMAIL_USE_SSL = False
+    EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '30'))
+else:
+    EMAIL_BACKEND = os.getenv(
+        'EMAIL_BACKEND',
+        'django.core.mail.backends.smtp.EmailBackend',
+    )
+    EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com').strip()
+    EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '').strip()
+    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '').replace(' ', '')
+    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('1', 'true', 'yes')
+    EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False').lower() in ('1', 'true', 'yes')
+    EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '30'))
+    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER).strip() or EMAIL_HOST_USER
 
 SESSION_COOKIE_AGE = 3600
 DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024
