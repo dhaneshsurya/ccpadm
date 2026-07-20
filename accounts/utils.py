@@ -1,15 +1,19 @@
 import hashlib
+import html
 import logging
 import random
 import re
 import secrets
 from datetime import timedelta
 
-from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
 
-from .email_config import classify_email_failure, is_email_configured
+from .email_config import (
+    get_public_site_url,
+    is_email_configured,
+    send_transactional_email,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -67,31 +71,85 @@ def generate_otp():
 
 
 def send_registration_email(email, name, reg_no, password):
-    if not email or not is_email_configured():
-        return
-    body = (
-        f'Hello {name},\n\n'
-        f'Your registration is complete.\n'
-        f'Registration Number: {reg_no}\n'
-        f'Temporary Password: {password}\n\n'
-        f'Please keep this information safe.'
+    """
+    Send registration credentials. Returns True if delivered (or DEBUG fallback).
+    Failures are logged; registration still succeeds so students can use on-screen credentials.
+    """
+    if not email:
+        return False
+
+    if not is_email_configured():
+        if settings.DEBUG:
+            logger.warning(
+                'EMAIL not configured. Registration for %s: reg_no=%s password=%s',
+                email,
+                reg_no,
+                password,
+            )
+            return True
+        logger.error('Email not configured; cannot send registration mail to %s', email)
+        return False
+
+    site_url = get_public_site_url()
+    login_url = f'{site_url}/login/'
+    student_name = (name or 'Student').strip()
+    student_name_html = html.escape(student_name)
+    reg_no_html = html.escape(str(reg_no))
+    password_html = html.escape(str(password))
+
+    subject = 'Your Chaitanya College online admission account'
+    text_body = (
+        f'Dear {student_name},\n\n'
+        f'Thank you for registering on the Chaitanya Science & Arts College '
+        f'online admission portal.\n\n'
+        f'Your account has been created successfully. Please use the details below '
+        f'to sign in and complete your admission form:\n\n'
+        f'  Registration Number : {reg_no}\n'
+        f'  Temporary Password  : {password}\n'
+        f'  Login page          : {login_url}\n\n'
+        f'For security, change your password after first login if you wish, and do not '
+        f'share these details with anyone.\n\n'
+        f'If you did not register on this portal, please ignore this message or contact '
+        f'the college office.\n\n'
+        f'Regards,\n'
+        f'Chaitanya Science & Arts College\n'
+        f'{site_url}\n'
     )
-    send_mail(
-        'Registration Successful - Chaitanya College',
-        body,
-        settings.DEFAULT_FROM_EMAIL,
-        [email],
-        fail_silently=True,
+    html_body = f"""\
+<html><body style="font-family: Arial, sans-serif; color: #0f172a; line-height: 1.5;">
+  <p>Dear {student_name_html},</p>
+  <p>Thank you for registering on the <strong>Chaitanya Science &amp; Arts College</strong>
+  online admission portal.</p>
+  <p>Your account has been created successfully. Use the details below to sign in and
+  complete your admission form:</p>
+  <table cellpadding="6" style="border-collapse: collapse; background: #f8fafc; border: 1px solid #e2e8f0;">
+    <tr><td><strong>Registration Number</strong></td><td>{reg_no_html}</td></tr>
+    <tr><td><strong>Temporary Password</strong></td><td>{password_html}</td></tr>
+    <tr><td><strong>Login page</strong></td><td><a href="{html.escape(login_url)}">{html.escape(login_url)}</a></td></tr>
+  </table>
+  <p style="font-size: 0.9em; color: #475569;">
+    For security, do not share these details. If you did not register, ignore this email
+    or contact the college office.
+  </p>
+  <p>Regards,<br>Chaitanya Science &amp; Arts College<br>
+  <a href="{html.escape(site_url)}">{html.escape(site_url)}</a></p>
+</body></html>
+"""
+    ok, reason = send_transactional_email(
+        subject=subject,
+        text_body=text_body,
+        html_body=html_body,
+        to_email=email,
     )
+    if not ok:
+        logger.error('Registration email not delivered to %s (reason=%s)', email, reason)
+    return ok
 
 
 def send_otp_email(email, otp):
     """Send OTP email. Returns (success, failure_reason)."""
     if not email:
         return False, 'missing_email'
-
-    subject = 'Password Reset OTP - Chaitanya College'
-    body = f'Your OTP is: {otp}\nValid for 10 minutes.'
 
     if not is_email_configured():
         if settings.DEBUG:
@@ -103,19 +161,39 @@ def send_otp_email(email, otp):
         )
         return False, 'not_configured'
 
-    try:
-        send_mail(
-            subject,
-            body,
-            settings.DEFAULT_FROM_EMAIL,
-            [email],
-            fail_silently=False,
-        )
-        return True, 'sent'
-    except Exception as exc:
-        reason = classify_email_failure(exc)
-        logger.error('Failed to send OTP email to %s (%s): %s', email, reason, exc)
-        return False, reason
+    site_url = get_public_site_url()
+    subject = 'Password reset code — Chaitanya College admission portal'
+    text_body = (
+        f'Dear Student,\n\n'
+        f'You requested a password reset for your Chaitanya Science & Arts College '
+        f'online admission account.\n\n'
+        f'Your one-time verification code is: {otp}\n'
+        f'This code is valid for 10 minutes.\n\n'
+        f'If you did not request a password reset, please ignore this email.\n\n'
+        f'Regards,\n'
+        f'Chaitanya Science & Arts College\n'
+        f'{site_url}\n'
+    )
+    html_body = f"""\
+<html><body style="font-family: Arial, sans-serif; color: #0f172a; line-height: 1.5;">
+  <p>Dear Student,</p>
+  <p>You requested a password reset for your
+  <strong>Chaitanya Science &amp; Arts College</strong> online admission account.</p>
+  <p style="font-size: 1.25rem; letter-spacing: 0.12em;"><strong>{otp}</strong></p>
+  <p>This code is valid for <strong>10 minutes</strong>.</p>
+  <p style="font-size: 0.9em; color: #475569;">
+    If you did not request a password reset, please ignore this email.
+  </p>
+  <p>Regards,<br>Chaitanya Science &amp; Arts College<br>
+  <a href="{site_url}">{site_url}</a></p>
+</body></html>
+"""
+    return send_transactional_email(
+        subject=subject,
+        text_body=text_body,
+        html_body=html_body,
+        to_email=email,
+    )
 
 
 def mask_aadhaar(aadhaar):

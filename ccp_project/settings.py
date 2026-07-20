@@ -111,6 +111,14 @@ MSSQL_COURSEDB = os.getenv('MSSQL_COURSEDB', 'courseinformation')
 MSSQL_TRUSTED_CONNECTION = os.getenv('MSSQL_TRUSTED_CONNECTION', 'yes').lower() in ('1', 'true', 'yes')
 
 USE_SES = os.getenv('USE_SES', 'False').lower() in ('1', 'true', 'yes')
+EMAIL_FROM_NAME = os.getenv(
+    'EMAIL_FROM_NAME',
+    'Chaitanya Science & Arts College',
+).strip() or 'Chaitanya Science & Arts College'
+PUBLIC_SITE_URL = os.getenv(
+    'PUBLIC_SITE_URL',
+    'https://online.chaitanyacg.ac.in',
+).strip().rstrip('/')
 
 if USE_SES:
     EMAIL_BACKEND = 'django_ses.SESBackend'
@@ -141,6 +149,8 @@ else:
     EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False').lower() in ('1', 'true', 'yes')
     EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '30'))
     DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER).strip() or EMAIL_HOST_USER
+
+SERVER_EMAIL = DEFAULT_FROM_EMAIL or 'noreply@localhost'
 
 SESSION_COOKIE_AGE = 3600
 DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024

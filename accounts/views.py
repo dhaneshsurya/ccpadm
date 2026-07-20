@@ -285,6 +285,10 @@ def _otp_failure_message(reason):
             'Could not send OTP because the server is not allowed to send email. '
             'Please contact the college office.'
         ),
+        'blocked': (
+            'The email provider blocked delivery of this message. '
+            'Please try again later or contact the college office.'
+        ),
         'connection_error': (
             'Could not reach the email server right now. Please try again later.'
         ),
