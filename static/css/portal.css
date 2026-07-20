@@ -1989,6 +1989,50 @@ h3.college-title-main {
     font-size: 0.78rem;
 }
 
+.data-table--students .student-group-label {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: #1e40af;
+}
+
+.data-table--students .student-dsc-courses {
+    display: block;
+    margin-top: 4px;
+    line-height: 1.35;
+    white-space: normal;
+    word-break: break-word;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+.data-table--students .student-dsc-courses__tag {
+    display: inline-block;
+    margin-right: 4px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #dbeafe;
+    color: #1e40af;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.data-table--students .student-dsc-courses__item {
+    color: #0f172a;
+}
+
+.data-table--students .student-dsc-courses__sep {
+    margin: 0 3px;
+    color: #94a3b8;
+}
+
+.data-table--students .col-program {
+    width: 18%;
+    min-width: 160px;
+}
+
 .data-table--students .cell-mobile {
     display: block;
     margin-top: 3px;

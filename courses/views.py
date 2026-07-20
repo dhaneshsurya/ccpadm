@@ -17,9 +17,12 @@ from .docx_import import import_ug_courses_from_docx
 from .models import Program, ProgramCourse
 from .subject_groups import (
     course_is_group_course,
+    get_bsc_group_for_course,
+    get_bsc_subject_group_sections,
     get_subject_groups_queryset,
     group_label_for_course,
     is_bsc_program,
+    resolve_bsc_courses_program_type,
     save_course_subject_groups,
 )
 from .utils import get_program_names, sync_programs_from_courses
@@ -29,13 +32,26 @@ DEFAULT_UG_DOCX_PATH = r'C:\Users\LEGION\Downloads\UG First Semester  Course Inf
 
 def _filter_querystring(request):
     params = {}
-    for key in ('search', 'program', 'type1', 'type2', 'level'):
+    for key in ('search', 'program', 'type1', 'type2', 'group', 'level'):
         value = request.GET.get(key, '').strip() or request.POST.get(key, '').strip()
         if value and value != 'ALL':
             params[key] = value
-        elif key in ('program', 'type1', 'type2', 'level') and value == 'ALL':
+        elif key in ('program', 'type1', 'type2', 'group', 'level') and value == 'ALL':
             params[key] = value
     return params
+
+
+def _subject_group_filter_choices(program_type):
+    if not is_bsc_program(program_type):
+        return []
+    choices = []
+    for section in get_bsc_subject_group_sections(program_type):
+        for group in section['groups']:
+            choices.append({
+                'key': group['key'],
+                'label': group.get('full_name') or f"{section['heading']} — {group['label']}",
+            })
+    return choices
 
 
 def _manage_courses_url(params=None, edit_pk=None):
@@ -68,9 +84,10 @@ def _manage_programs_url(params=None, edit_pk=None):
 def manage_courses(request):
     courses = ProgramCourse.objects.prefetch_related('subject_groups')
     search = request.GET.get('search', '').strip()
-    program_filter = request.GET.get('program', 'ALL')
-    type1_filter = request.GET.get('type1', 'ALL')
-    type2_filter = request.GET.get('type2', 'ALL')
+    program_filter = request.GET.get('program', 'ALL').strip() or 'ALL'
+    type1_filter = request.GET.get('type1', 'ALL').strip() or 'ALL'
+    type2_filter = request.GET.get('type2', 'ALL').strip() or 'ALL'
+    group_filter = request.GET.get('group', 'ALL').strip() or 'ALL'
     edit_pk = request.GET.get('edit', '').strip()
 
     if search:
@@ -80,11 +97,17 @@ def manage_courses(request):
             | Q(program_type__icontains=search)
         )
     if program_filter != 'ALL':
-        courses = courses.filter(program_type=program_filter)
+        if is_bsc_program(program_filter):
+            resolved = resolve_bsc_courses_program_type(program_filter)
+            program_names = {program_filter, resolved}
+            program_names.discard('')
+            courses = courses.filter(program_type__in=program_names)
+        else:
+            courses = courses.filter(program_type=program_filter)
     if type1_filter != 'ALL':
-        courses = courses.filter(course_type_1=type1_filter)
+        courses = courses.filter(course_type_1__iexact=type1_filter)
     if type2_filter != 'ALL':
-        courses = courses.filter(course_type_2=type2_filter)
+        courses = courses.filter(course_type_2__iexact=type2_filter)
 
     program_types = get_program_names(active_only=False)
     type2_options = (
@@ -107,6 +130,7 @@ def manage_courses(request):
         'program': program_filter,
         'type1': type1_filter,
         'type2': type2_filter,
+        'group': group_filter,
     }
 
     current_type1 = edit_course.course_type_1 if edit_course else ''
@@ -120,6 +144,13 @@ def manage_courses(request):
 
     show_bsc_groups = is_bsc_program(program_filter)
     show_group_field = is_bsc_program(current_program)
+    subject_group_choices = _subject_group_filter_choices(program_filter)
+    show_group_filter = bool(subject_group_choices)
+    valid_group_keys = {item['key'] for item in subject_group_choices}
+    if group_filter != 'ALL' and group_filter not in valid_group_keys:
+        group_filter = 'ALL'
+        filter_params['group'] = group_filter
+
     available_subject_groups = (
         list(get_subject_groups_queryset(current_program))
         if show_group_field else []
@@ -131,13 +162,19 @@ def manage_courses(request):
         )
 
     program_department_flags = {}
-    course_list = list(courses)
+    course_list = list(courses.order_by('program_type', 'sort_order', 'course_name'))
     for course in course_list:
         if course.program_type not in program_department_flags:
             program_department_flags[course.program_type] = (
                 program_shows_department_in_course_name(course.program_type)
             )
         course.show_department_in_name = program_department_flags[course.program_type]
+        course.group_keys = get_bsc_group_for_course(
+            course.department,
+            course.course_type_2,
+            course.program_type,
+            course=course,
+        )
         if show_bsc_groups and is_bsc_program(course.program_type):
             course.subject_group_label = group_label_for_course(
                 course.department,
@@ -145,8 +182,16 @@ def manage_courses(request):
                 course.program_type,
                 course=course,
             )
+            course.is_dsc = (course.course_type_2 or '').strip().upper() == 'DSC'
         else:
             course.subject_group_label = ''
+            course.is_dsc = (course.course_type_2 or '').strip().upper() == 'DSC'
+
+    if group_filter != 'ALL' and show_group_filter:
+        course_list = [
+            course for course in course_list
+            if group_filter in (course.group_keys or [])
+        ]
 
     show_department_in_course_name = True
     if program_filter != 'ALL':
@@ -167,12 +212,16 @@ def manage_courses(request):
         'program_filter': program_filter,
         'type1_filter': type1_filter,
         'type2_filter': type2_filter,
+        'group_filter': group_filter,
+        'subject_group_choices': subject_group_choices,
+        'show_group_filter': show_group_filter,
         'edit_course': edit_course,
         'filter_params': filter_params,
         'show_group_field': show_group_field,
         'available_subject_groups': available_subject_groups,
         'selected_subject_group_ids': selected_subject_group_ids,
         'show_department_in_course_name': show_department_in_course_name,
+        'total_count': len(course_list),
     })
 
 

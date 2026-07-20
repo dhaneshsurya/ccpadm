@@ -9,21 +9,34 @@
             <h2 class="page-title"><i class="fas fa-users"></i> Registered Students</h2>
             <nav class="page-actions page-actions--toolbar" aria-label="Admin navigation">
                 {% include 'partials/admin_nav_actions.html' with active_page='students' %}
-                <a href="{% url 'export_students_csv' %}?search={{ search }}&program={{ program_filter }}&verified={{ verified_filter }}" class="page-action-btn page-action-btn--accent">
+                <a href="{% url 'export_students_csv' %}?search={{ search|urlencode }}&program={{ program_filter|urlencode }}&verified={{ verified_filter|urlencode }}&group={{ group_filter|urlencode }}" class="page-action-btn page-action-btn--accent">
                     <i class="fas fa-file-csv" aria-hidden="true"></i><span>Export CSV</span>
                 </a>
                 {% include 'partials/admin_nav_logout.html' %}
             </nav>
         </div>
 
-        <form method="get" class="filter-bar">
+        <form method="get" class="filter-bar" id="studentsFilterForm">
             <input type="text" name="search" value="{{ search }}" class="portal-input" placeholder="Search name, email, mobile, reg no...">
-            <select name="program" class="portal-input">
+            <select name="program" class="portal-input" id="programFilter" aria-label="Filter by program" onchange="this.form.submit()">
                 <option value="ALL">All Programs</option>
                 {% for pt in program_types %}
                 <option value="{{ pt }}" {% if program_filter == pt %}selected{% endif %}>{{ pt }}</option>
                 {% endfor %}
             </select>
+            {% if show_group_filter %}
+            <select name="group" class="portal-input" id="groupFilter" aria-label="Filter by subject group">
+                <option value="ALL" {% if group_filter == 'ALL' %}selected{% endif %}>All Subject Groups</option>
+                <option value="NONE" {% if group_filter == 'NONE' %}selected{% endif %}>No group selected</option>
+                {% for g in subject_group_choices %}
+                <option value="{{ g.key }}" {% if group_filter == g.key %}selected{% endif %}>{{ g.label }}</option>
+                {% endfor %}
+            </select>
+            {% else %}
+            <select class="portal-input" disabled aria-label="Subject group filter unavailable" title="Select a B.Sc. program to filter by subject group">
+                <option>Subject Group (B.Sc. only)</option>
+            </select>
+            {% endif %}
             <select name="verified" class="portal-input">
                 <option value="ALL" {% if verified_filter == 'ALL' %}selected{% endif %}>All Verification</option>
                 <option value="YES" {% if verified_filter == 'YES' %}selected{% endif %}>Verified Only</option>
@@ -39,6 +52,7 @@
             <input type="hidden" name="search" value="{{ search }}">
             <input type="hidden" name="program" value="{{ program_filter }}">
             <input type="hidden" name="verified" value="{{ verified_filter }}">
+            <input type="hidden" name="group" value="{{ group_filter }}">
             <span class="bulk-action-bar__count" id="bulkSelectedCount">0 selected</span>
             <select name="action" id="bulkActionSelect" class="portal-input" disabled aria-label="Bulk student action">
                 <option value="">Choose action...</option>
@@ -96,7 +110,19 @@
                         </td>
                         <td class="col-program">
                             <span class="cell-clip" title="{{ s.program_type|default:'—' }}">{{ s.program_type|default:"—" }}</span>
-                            {% if s.course_name %}<small class="text-muted cell-clip" title="{{ s.course_name }}">{{ s.course_name }}</small>{% endif %}
+                            {% if s.bsc_group_label %}
+                            <small class="student-group-label" title="{{ s.bsc_group_label }}">{{ s.bsc_group_label }}</small>
+                            {% endif %}
+                            {% if s.dsc_course_names %}
+                            <div class="student-dsc-courses" title="{{ s.dsc_courses_display }}">
+                                <span class="student-dsc-courses__tag">DSC</span>
+                                {% for name in s.dsc_course_names %}
+                                <span class="student-dsc-courses__item">{{ name }}</span>{% if not forloop.last %}<span class="student-dsc-courses__sep">·</span>{% endif %}
+                                {% endfor %}
+                            </div>
+                            {% elif s.course_name %}
+                            <small class="text-muted cell-clip" title="{{ s.course_name }}">{{ s.course_name }}</small>
+                            {% endif %}
                         </td>
                         <td class="col-admission">
                             {% if s.latest_admission %}
@@ -119,6 +145,7 @@
                                 <input type="hidden" name="search" value="{{ search }}">
                                 <input type="hidden" name="program" value="{{ program_filter }}">
                                 <input type="hidden" name="verified" value="{{ verified_filter }}">
+                                <input type="hidden" name="group" value="{{ group_filter }}">
                                 <button type="submit" class="btn btn-sm {% if s.is_verified %}btn-success{% else %}btn-ghost{% endif %}" title="Toggle verification">
                                     {% if s.is_verified %}<i class="fas fa-check-circle"></i> Yes{% else %}<i class="fas fa-times-circle"></i> No{% endif %}
                                 </button>
@@ -127,7 +154,7 @@
                         <td class="col-actions">
                             <div class="action-grid">
                                 <div class="action-grid__icons">
-                                    <a href="{% url 'manage_students' %}?edit={{ s.pk }}&search={{ search }}&program={{ program_filter }}&verified={{ verified_filter }}"
+                                    <a href="{% url 'manage_students' %}?edit={{ s.pk }}&search={{ search|urlencode }}&program={{ program_filter|urlencode }}&verified={{ verified_filter|urlencode }}&group={{ group_filter|urlencode }}"
                                        class="btn btn-sm btn-secondary" title="Edit student">
                                         <i class="fas fa-edit"></i>
                                     </a>
@@ -137,6 +164,7 @@
                                         <input type="hidden" name="search" value="{{ search }}">
                                         <input type="hidden" name="program" value="{{ program_filter }}">
                                         <input type="hidden" name="verified" value="{{ verified_filter }}">
+                                        <input type="hidden" name="group" value="{{ group_filter }}">
                                         <button type="submit" class="btn btn-sm btn-ghost" title="Reset password">
                                             <i class="fas fa-key"></i>
                                         </button>
@@ -163,6 +191,7 @@
                                         <input type="hidden" name="search" value="{{ search }}">
                                         <input type="hidden" name="program" value="{{ program_filter }}">
                                         <input type="hidden" name="verified" value="{{ verified_filter }}">
+                                        <input type="hidden" name="group" value="{{ group_filter }}">
                                         <button type="submit" class="btn btn-sm btn-danger" title="Delete student">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -174,7 +203,7 @@
                                 <div class="action-grid__select">
                                     <form method="post" action="{% url 'update_admission_status' s.latest_admission.pk %}" class="inline-form action-grid__select-form">
                                         {% csrf_token %}
-                                        <input type="hidden" name="next" value="{% url 'manage_students' %}?search={{ search|urlencode }}&amp;program={{ program_filter|urlencode }}&amp;verified={{ verified_filter|urlencode }}">
+                                        <input type="hidden" name="next" value="{% url 'manage_students' %}?search={{ search|urlencode }}&amp;program={{ program_filter|urlencode }}&amp;verified={{ verified_filter|urlencode }}&amp;group={{ group_filter|urlencode }}">
                                         <select name="status" class="portal-input portal-input--compact portal-input--full" onchange="this.form.submit()" aria-label="Application action for {{ s.registration_no }}">
                                             <option value="">Application...</option>
                                             <option value="Rejected">Reject</option>
@@ -207,6 +236,7 @@
             <input type="hidden" name="search" value="{{ search }}">
             <input type="hidden" name="program" value="{{ program_filter }}">
             <input type="hidden" name="verified" value="{{ verified_filter }}">
+            <input type="hidden" name="group" value="{{ group_filter }}">
 
             <div class="form-field">
                 <label>Registration No</label>
@@ -264,7 +294,7 @@
                 <button type="submit" class="btn btn-secondary">
                     <i class="fas fa-save"></i> Save Changes
                 </button>
-                <a href="{% url 'manage_students' %}?search={{ search }}&program={{ program_filter }}&verified={{ verified_filter }}" class="btn btn-ghost">
+                <a href="{% url 'manage_students' %}?search={{ search|urlencode }}&program={{ program_filter|urlencode }}&verified={{ verified_filter|urlencode }}&group={{ group_filter|urlencode }}" class="btn btn-ghost">
                     Cancel Edit
                 </a>
             </div>

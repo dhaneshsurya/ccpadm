@@ -17,7 +17,16 @@ from accounts.utils import (
     is_valid_mobile,
 )
 from admissions.models import StudentAdmission
-from admissions.services import get_print_context, parse_selected_subjects
+from admissions.services import (
+    get_print_context,
+    parse_selected_subjects,
+    parse_selected_subjects_payload,
+)
+from courses.subject_groups import (
+    format_bsc_group_display_name,
+    get_bsc_subject_group_sections,
+    is_bsc_program,
+)
 from courses.utils import get_program_names
 
 from .merit_list import (
@@ -40,11 +49,62 @@ def _students_filter_params(request):
 
     program = (source.get('program') or 'ALL').strip() or 'ALL'
     verified = (source.get('verified') or 'ALL').strip() or 'ALL'
+    group = (source.get('group') or 'ALL').strip() or 'ALL'
     return {
         'search': source.get('search', '').strip(),
         'program': program,
         'verified': verified,
+        'group': group,
     }
+
+
+def _subject_group_filter_choices(program_type):
+    """B.Sc. subject groups for the selected program (empty when not B.Sc.)."""
+    if not is_bsc_program(program_type):
+        return []
+    choices = []
+    for section in get_bsc_subject_group_sections(program_type):
+        for group in section['groups']:
+            choices.append({
+                'key': group['key'],
+                'label': group.get('full_name') or f"{section['heading']} — {group['label']}",
+            })
+    return choices
+
+
+def _normalize_group_filter(group_filter, program_type):
+    """Drop invalid group keys when program is not B.Sc. or group is unknown."""
+    group_filter = (group_filter or 'ALL').strip() or 'ALL'
+    if group_filter == 'ALL':
+        return 'ALL'
+    choices = _subject_group_filter_choices(program_type)
+    if not choices:
+        return 'ALL'
+    valid = {item['key'] for item in choices}
+    if group_filter == 'NONE' or group_filter in valid:
+        return group_filter
+    return 'ALL'
+
+
+def _admission_bsc_group_key(admission):
+    if not admission:
+        return ''
+    _, group_key = parse_selected_subjects_payload(admission.selected_subjects_json)
+    return (group_key or '').strip()
+
+
+def _filter_students_by_group(students, group_filter='ALL'):
+    if not group_filter or group_filter == 'ALL':
+        return students
+    result = []
+    for student in students:
+        key = _admission_bsc_group_key(getattr(student, 'latest_admission', None))
+        if group_filter == 'NONE':
+            if not key:
+                result.append(student)
+        elif key == group_filter:
+            result.append(student)
+    return result
 
 
 def _students_url(params=None, edit_pk=None):
@@ -115,6 +175,32 @@ def _format_selected_courses_for_export(student):
     return _export_course_name_only(student.course_name)
 
 
+def _admission_dsc_course_labels(admission):
+    """DSC theory course labels from selected subjects (department — paper name)."""
+    if not admission:
+        return []
+    subjects = parse_selected_subjects(admission)
+    labels = []
+    seen = set()
+    for item in subjects:
+        if not isinstance(item, dict):
+            continue
+        if (item.get('type2') or '').strip().upper() != 'DSC':
+            continue
+        type1 = (item.get('type1') or '').strip().lower()
+        if 'practical' in type1 or 'lab' in type1:
+            continue
+        full = (item.get('name') or '').strip()
+        if not full:
+            continue
+        key = full.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        labels.append(full)
+    return labels
+
+
 def _attach_admissions(students):
     reg_nos = [s.registration_no for s in students]
     admission_map = {}
@@ -126,7 +212,17 @@ def _attach_admissions(students):
             if adm.reg_no not in admission_map:
                 admission_map[adm.reg_no] = adm
     for student in students:
-        student.latest_admission = admission_map.get(student.registration_no)
+        admission = admission_map.get(student.registration_no)
+        student.latest_admission = admission
+        group_key = _admission_bsc_group_key(admission)
+        student.bsc_group_key = group_key
+        student.bsc_group_label = (
+            format_bsc_group_display_name(group_key, student.program_type)
+            if group_key
+            else ''
+        )
+        student.dsc_course_names = _admission_dsc_course_labels(admission)
+        student.dsc_courses_display = '; '.join(student.dsc_course_names)
     return students
 
 
@@ -274,10 +370,15 @@ def manage_students(request):
     search = params['search']
     program_filter = params['program']
     verified_filter = params['verified']
+    group_filter = _normalize_group_filter(params['group'], program_filter)
+    params['group'] = group_filter
     edit_pk = request.GET.get('edit', '').strip()
 
-    students = _attach_admissions(
-        list(_get_students_queryset(search, program_filter, verified_filter))
+    students = _filter_students_by_group(
+        _attach_admissions(
+            list(_get_students_queryset(search, program_filter, verified_filter))
+        ),
+        group_filter,
     )
 
     edit_student = None
@@ -287,6 +388,8 @@ def manage_students(request):
             _attach_admissions([edit_student])
 
     program_types = get_program_names(active_only=False)
+    subject_group_choices = _subject_group_filter_choices(program_filter)
+    show_group_filter = bool(subject_group_choices)
     reset_password_display = request.session.pop('reset_password_display', None)
     bulk_reset_passwords_display = request.session.pop('bulk_reset_passwords_display', None)
 
@@ -295,7 +398,10 @@ def manage_students(request):
         'search': search,
         'program_filter': program_filter,
         'verified_filter': verified_filter,
+        'group_filter': group_filter,
         'program_types': program_types,
+        'subject_group_choices': subject_group_choices,
+        'show_group_filter': show_group_filter,
         'edit_student': edit_student,
         'filter_params': params,
         'total_count': len(students),
@@ -551,8 +657,12 @@ def export_merit_list_excel(request):
 @admin_login_required
 def export_students_csv(request):
     params = _students_filter_params(request)
-    students = _attach_admissions(
-        _get_students_queryset(params['search'], params['program'], params['verified'])
+    group_filter = _normalize_group_filter(params['group'], params['program'])
+    students = _filter_students_by_group(
+        _attach_admissions(
+            list(_get_students_queryset(params['search'], params['program'], params['verified']))
+        ),
+        group_filter,
     )
 
     response = HttpResponse(content_type='text/csv')
@@ -560,7 +670,7 @@ def export_students_csv(request):
     writer = csv.writer(response)
     writer.writerow([
         'Registration No', 'Full Name', 'Email', 'Mobile', 'Aadhaar',
-        'Program', 'Course', 'Selected Courses / Paper Name',
+        'Program', 'Subject Group', 'DSC Courses', 'Course', 'Selected Courses / Paper Name',
         'Application No', 'Verified', 'Registered On',
     ])
     for s in students:
@@ -572,6 +682,8 @@ def export_students_csv(request):
             s.mobile or '',
             s.aadhaar or '',
             s.program_type,
+            getattr(s, 'bsc_group_label', '') or '',
+            getattr(s, 'dsc_courses_display', '') or '',
             s.course_name,
             _format_selected_courses_for_export(s),
             (admission.application_no if admission else '') or '',
